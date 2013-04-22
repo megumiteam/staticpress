@@ -191,7 +191,7 @@ CREATE TABLE `{$this->url_table}` (
 		}
 
 		header('Content-Type: application/json; charset=utf-8');
-		echo json_encode(array('result' => true, 'files' => $result));
+		echo json_encode(array('result' => true, 'files' => $result, 'final' => ($url === false)));
 		die();
 	}
 

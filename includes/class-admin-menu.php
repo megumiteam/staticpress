@@ -144,7 +144,10 @@ jQuery(function($){
 						ul.append('<li>' + this.ID + ' : ' + this.static + '</li>');
 				});
 				$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
-				static_static_fetch();
+				if (response.final)
+					static_static_finalyze();
+				else
+					static_static_fetch();
 			} else {
 				static_static_finalyze();
 			}
