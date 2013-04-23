@@ -15,7 +15,7 @@ class static_static {
 	private $transient_key = 'static static';
 
 	private $static_files = array(
-		'html','htm','css','js','gif','png','jpg','jpeg','mp3','zip','ico','ttf','woff','otf','eot','svg','svgz','xml'
+		'html','htm','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = ''){
@@ -209,7 +209,7 @@ CREATE TABLE `{$this->url_table}` (
 
 	public function replace_url($url){
 		$url = trim(str_replace($this->home_url, $this->static_home_url, $url));
-		if (!preg_match('#[^/]+\.' . implode('|', $this->static_files) . '$#i', $url))
+		if (!preg_match('#[^/]+\.' . implode('|', array_merge($this->static_files, array('php'))) . '$#i', $url))
 			$url = trailingslashit($url);
 		return $url;
 	}
