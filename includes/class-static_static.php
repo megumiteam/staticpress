@@ -109,6 +109,9 @@ CREATE TABLE `{$this->url_table}` (
 	public function ajax_init(){
 		global $wpdb;
 
+		if (!defined('WP_DEBUG_DISPLAY'))
+			define('WP_DEBUG_DISPLAY', false);
+
 		if (!is_user_logged_in())
 			wp_die('Forbidden');
 
@@ -128,6 +131,9 @@ CREATE TABLE `{$this->url_table}` (
 	public function ajax_fetch(){
 		if (!is_user_logged_in())
 			wp_die('Forbidden');
+
+		if (!defined('WP_DEBUG_DISPLAY'))
+			define('WP_DEBUG_DISPLAY', false);
 
 		$url = $this->fetch_url();
 		if (!$url)
@@ -206,6 +212,9 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	public function ajax_finalyze(){
+		if (!defined('WP_DEBUG_DISPLAY'))
+			define('WP_DEBUG_DISPLAY', false);
+
 		if (!is_user_logged_in())
 			wp_die('Forbidden');
 
@@ -215,7 +224,8 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	public function replace_url($url){
-		$url = trim(str_replace($this->home_url, $this->static_home_url, $url));
+		$site_url = trailingslashit($this->get_site_url());
+		$url = trim(str_replace($site_url, '/', $url));
 		if (!preg_match('#[^/]+\.' . implode('|', array_merge($this->static_files, array('php'))) . '$#i', $url))
 			$url = trailingslashit($url);
 		return $url;
@@ -389,7 +399,7 @@ CREATE TABLE `{$this->url_table}` (
 
 	private function remote_get($url){
 		if (!preg_match('#^https://#i', $url))
-			$url = preg_replace('#^'.preg_quote($this->static_home_url).'#', $this->home_url, $url);
+			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i') ? $url : "/{$url}");
 		$response = wp_remote_get($url);
 		if (is_wp_error($response))
 			return false;
@@ -397,24 +407,20 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	private function replace_relative_URI($content) {
-		$parsed = parse_url($this->home_url);
-		$home_url = $parsed['scheme'] . '://' . $parsed['host'];
-		if (isset($parsed['port']))
-			$home_url .= ':'.$parsed['port'];
-		$pattern  = array(
-			'# (href|src|action)="'.preg_quote($home_url).'([^"]*)"#ism',
-			"# (href|src|action)='".preg_quote($home_url)."([^']*)'#ism",
-		);
-		$content  = preg_replace($pattern, ' $1="$2"', $content);
+		$content = str_replace(trailingslashit($this->get_site_url()), trailingslashit($this->static_url), $content);
 
 		$parsed = parse_url($this->static_url);
 		$static_url = $parsed['scheme'] . '://' . $parsed['host'];
 		if (isset($parsed['port']))
-			$static_url .= ':'.$parsed['port'];
+			$home_url .= ':'.$parsed['port'];
+		$pattern  = array(
+			'# (href|src|action)="'.preg_quote($static_url).'([^"]*)"#ism',
+			"# (href|src|action)='".preg_quote($static_url)."([^']*)'#ism",
+		);
+		$content  = preg_replace($pattern, ' $1="$2"', $content);
+
 		$pattern  = '#<(meta [^>]*property=[\'"]og:[^\'"]*[\'"] [^>]*content=|link [^>]*rel=[\'"]canonical[\'"] [^>]*href=|link [^>]*rel=[\'"]shortlink[\'"] [^>]*href=|data-href=|data-url=)[\'"](/[^\'"]*)[\'"]([^>]*)>#uism';
 		$content = preg_replace($pattern, '<$1"'.$static_url.'$2"$3>', $content);
-
-		$content = str_replace($home_url, $static_url, $content);
 
 		return $content;
 	}
