@@ -15,7 +15,7 @@ class static_static {
 	private $transient_key = 'static static';
 
 	private $static_files = array(
-		'html','htm','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
+		'html','htm','txt','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = ''){
@@ -59,11 +59,21 @@ class static_static {
 		}
 		$this->make_subdirectories($this->static_dir);
 
-		$this->activation();
+		$this->create_table();
 	}
 
 	public function activation(){
 		global $wpdb;
+
+		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table)
+			$this->create_table();
+		else if (!$wpdb->get_row("show fields from `{$this->url_table}` where field = 'enable'"))
+			$wpdb->query("ALTER TABLE `{$this->url_table}` ADD COLUMN `enable` int(1) unsigned NOT NULL DEFAULT '1'");
+	}
+
+	public function create_table(){
+		global $wpdb;
+
 		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table) {
 			$wpdb->query("
 CREATE TABLE `{$this->url_table}` (
@@ -74,13 +84,13 @@ CREATE TABLE `{$this->url_table}` (
  `object_type` varchar(20) NULL ,
  `parent` bigint(20) unsigned NOT NULL DEFAULT 0,
  `pages` bigint(20) unsigned NOT NULL DEFAULT 1,
+ `enable` int(1) unsigned NOT NULL DEFAULT '1',
  `file_name` varchar(255) NOT NULL,
  `file_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `last_statuscode` int(20) NULL,
  `last_modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `last_upload` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `create_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
- `enable` int(1) unsigned NOT NULL DEFAULT '1',
  PRIMARY KEY (`ID`),
  KEY `type` (`type`),
  KEY `url` (`url`),
@@ -88,8 +98,6 @@ CREATE TABLE `{$this->url_table}` (
  KEY `file_date` (`file_date`),
  KEY `last_upload` (`last_upload`)
 )");
-		} else if (!$wpdb->get_row("show fields from `{$this->url_table}` where field = 'enable'")) {
-			$wpdb->query("ALTER TABLE `{$this->url_table}` ADD COLUMN `enable` int(1) unsigned NOT NULL DEFAULT '1'");
 		}
 	}
 
@@ -406,7 +414,6 @@ CREATE TABLE `{$this->url_table}` (
 
 		$content = str_replace($home_url, $static_url, $content);
 
-
 		return $content;
 	}
 
@@ -431,9 +438,14 @@ CREATE TABLE `{$this->url_table}` (
 			} else if (preg_match('#\?[^=]+[=]?#i', $url['url'])) {
 				$url['enable'] = 0;
 			} else if ($url['type'] == 'static_file') {
+				$plugin_dir  = trailingslashit(str_replace(ABSPATH, '/', WP_PLUGIN_DIR));
+				$theme_dir   = trailingslashit(str_replace(ABSPATH, '/', WP_CONTENT_DIR) . '/themes');
 				$file_source = untrailingslashit(ABSPATH) . $url['url'];
-				$file_dest = untrailingslashit($this->static_dir) . $url['url'];
+				$file_dest   = untrailingslashit($this->static_dir) . $url['url'];
+				$pattern     = '#^('.preg_quote($plugin_dir).'|'.preg_quote($theme_dir).').*/((readme|changelog|license)\.txt|(screenshot|screenshot-[0-9]+)\.png)$#i';
 				if ($file_source === $file_dest) {
+					$url['enable'] = 0;
+				} else if (preg_match($pattern, $url['url'])) {
 					$url['enable'] = 0;
 				} else if (!file_exists($file_source)) {
 					$url['enable'] = 0;
@@ -444,8 +456,6 @@ CREATE TABLE `{$this->url_table}` (
 				}
 
 				if ($url['enable'] == 1) {
-					$plugin_dir = trailingslashit(str_replace(ABSPATH, '/', WP_PLUGIN_DIR));
-					$theme_dir  = trailingslashit(str_replace(ABSPATH, '/', WP_CONTENT_DIR) . '/themes');
 					if (preg_match('#^'.preg_quote($plugin_dir).'#i', $url['url'])){
 						$url['enable'] = 0;
 						$active_plugins = get_settings('active_plugins');

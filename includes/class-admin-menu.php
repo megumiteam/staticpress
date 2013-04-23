@@ -113,10 +113,13 @@ class static_static_admin {
 <script type="text/javascript">
 jQuery(function($){
 	var file_count = 0;
+	var loader = $('<div id="loader" style="line-height: 115px; text-align: center;"><img alt="activity indicator" src="<?php echo plugins_url( 'images/ajax-loader.gif' , dirname(__FILE__) ); ?>"></div>');
 
 	function static_static_init(){
 		file_count = 0;
-		$('#rebuild-result').html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>');
+		$('#rebuild-result')
+			.html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>')
+			.after(loader);
 		$.post('<?php echo $admin_ajax; ?>',{
 			action: 'static_static_init'
 		}, function(response){
@@ -165,6 +168,7 @@ jQuery(function($){
 			action: 'static_static_finalyze'
 		}, function(response){
 			<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+			$('#loader').remove();
 			$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
 			file_count = 0;
 		});
