@@ -460,7 +460,7 @@ CREATE TABLE `{$this->url_table}` (
 				if ($url['enable'] == 1) {
 					if (preg_match('#^'.preg_quote($plugin_dir).'#i', $url['url'])){
 						$url['enable'] = 0;
-						$active_plugins = get_settings('active_plugins');
+						$active_plugins = get_option('active_plugins');
 						foreach ($active_plugins as $active_plugin) {
 							$active_plugin = trailingslashit($plugin_dir . dirname($active_plugin));
 							if ($active_plugin == trailingslashit($plugin_dir . '.'))
