@@ -450,7 +450,7 @@ CREATE TABLE `{$this->url_table}` (
 				$theme_dir   = trailingslashit(str_replace(ABSPATH, '/', WP_CONTENT_DIR) . '/themes');
 				$file_source = untrailingslashit(ABSPATH) . $url['url'];
 				$file_dest   = untrailingslashit($this->static_dir) . $url['url'];
-				$pattern     = '#^('.preg_quote($plugin_dir).'|'.preg_quote($theme_dir).').*/((readme|changelog|license)\.txt|(screenshot|screenshot-[0-9]+)\.png)$#i';
+				$pattern     = '#^(/readme.html|/readme-ja.html|('.preg_quote($plugin_dir).'|'.preg_quote($theme_dir).').*/((readme|changelog|license)\.txt|(screenshot|screenshot-[0-9]+)\.png))$#i';
 				if ($file_source === $file_dest) {
 					$url['enable'] = 0;
 				} else if (preg_match($pattern, $url['url'])) {
@@ -706,7 +706,12 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		foreach ($static_files as &$static_file) {
 			$static_file = "*.{$static_file}";
 		}
-		$static_files = $this->scan_file(ABSPATH, '{'.implode(',',$static_files).'}');
+		$static_files = array_merge(
+			$this->scan_file(trailingslashit(ABSPATH), '{'.implode(',',$static_files).'}', false),
+			$this->scan_file(trailingslashit(ABSPATH).'wp-admin/', '{'.implode(',',$static_files).'}', true),
+			$this->scan_file(trailingslashit(ABSPATH).'wp-includes/', '{'.implode(',',$static_files).'}', true),
+			$this->scan_file(trailingslashit(WP_CONTENT_DIR), '{'.implode(',',$static_files).'}', true)
+			);
 		foreach ($static_files as $static_file){
 			$urls[] = array(
 				'type' => $url_type,
@@ -762,11 +767,13 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		return $urls;
 	}
 
-	private function scan_file($dir, $target = '{*.html,*.htm,*.css,*.js,*.gif,*.png,*.jpg,*.jpeg,*.zip,*.ico,*.ttf,*.woff,*.otf,*.eot,*.svg,*.svgz,*.xml}') {
+	private function scan_file($dir, $target = '{*.html,*.htm,*.css,*.js,*.gif,*.png,*.jpg,*.jpeg,*.zip,*.ico,*.ttf,*.woff,*.otf,*.eot,*.svg,*.svgz,*.xml}', $recursive = true) {
 		$list = $tmp = array();
-		foreach(glob($dir . '*/', GLOB_ONLYDIR) as $child_dir) {
-			if ($tmp = $this->scan_file($child_dir, $target)) {
-				$list = array_merge($list, $tmp);
+		if ($recursive) {
+			foreach(glob($dir . '*/', GLOB_ONLYDIR) as $child_dir) {
+				if ($tmp = $this->scan_file($child_dir, $target, $recursive)) {
+					$list = array_merge($list, $tmp);
+				}
 			}
 		}
 
