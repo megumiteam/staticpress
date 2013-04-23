@@ -7,6 +7,7 @@ class static_static_admin {
 	const OPTION_STATIC_DIR  = 'static static::static dir';
 	const OPTION_PAGE = 'static-static';
 	const TEXT_DOMAIN = 'static-static';
+	const DEBUG_MODE  = TRUE;
 
 	private $plugin_basename;
 	private $static_url;
@@ -111,15 +112,18 @@ class static_static_admin {
 ?>
 <script type="text/javascript">
 jQuery(function($){
+	var file_count = 0;
+
 	function static_static_init(){
+		file_count = 0;
 		$('#rebuild-result').html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>');
 		$.post('<?php echo $admin_ajax; ?>',{
 			action: 'static_static_init'
 		}, function(response){
-			console.log(response);
+			<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
 			if (response.result) {
 				$('#rebuild-result').append('<p><strong><?php echo __('URLS',   self::TEXT_DOMAIN);?></strong></p>')
-				ul = $('<ul></ul>');
+				var ul = $('<ul></ul>');
 				$.each(response.urls_count, function(){
 					ul.append('<li>' + this.type + ' (' + this.count + ')</li>');
 				});
@@ -135,13 +139,15 @@ jQuery(function($){
 			action: 'static_static_fetch'
 		}, function(response){
 			if ($('#rebuild-result ul.result-list').size() == 0)
-				$('#rebuild-result').append('<p><ul class="result-list"></ul></p>');				
+				$('#rebuild-result').append('<p class="result-list-wrap"><ul class="result-list"></ul></p>');				
 			if (response.result) {
-				console.log(response);
-				ul = $('#rebuild-result ul.result-list');
+				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+				var ul = $('#rebuild-result ul.result-list');
 				$.each(response.files, function(){
-					if (this.static)
-						ul.append('<li>' + this.ID + ' : ' + this.static + '</li>');
+					if (this.static) {
+						file_count++;
+						ul.append('<li>' + file_count + ' : ' + this.static + '</li>');
+					}
 				});
 				$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
 				if (response.final)
@@ -158,8 +164,9 @@ jQuery(function($){
 		$.post('<?php echo $admin_ajax; ?>',{
 			action: 'static_static_finalyze'
 		}, function(response){
-			console.log(response);
-			$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>')
+			<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+			$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+			file_count = 0;
 		});
 	}
 

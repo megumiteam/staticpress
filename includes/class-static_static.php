@@ -1,5 +1,8 @@
 <?php
 class static_static {
+	const FETCH_LIMIT        =  20;
+	const FETCH_LIMIT_STATIC = 100;
+
 	private $plugin_basename;
 
 	private $static_url;
@@ -56,8 +59,7 @@ class static_static {
 		}
 		$this->make_subdirectories($this->static_dir);
 
-		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table)
-			$this->activation();
+		$this->activation();
 	}
 
 	public function activation(){
@@ -78,6 +80,7 @@ CREATE TABLE `{$this->url_table}` (
  `last_modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `last_upload` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `create_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+ `enable` int(1) unsigned NOT NULL DEFAULT '1',
  PRIMARY KEY (`ID`),
  KEY `type` (`type`),
  KEY `url` (`url`),
@@ -85,7 +88,15 @@ CREATE TABLE `{$this->url_table}` (
  KEY `file_date` (`file_date`),
  KEY `last_upload` (`last_upload`)
 )");
+		} else if (!$wpdb->get_row("show fields from `{$this->url_table}` where field = 'enable'")) {
+			$wpdb->query("ALTER TABLE `{$this->url_table}` ADD COLUMN `enable` int(1) unsigned NOT NULL DEFAULT '1'");
 		}
+	}
+
+	private function json_output($content){
+		header('Content-Type: application/json; charset=utf-8');
+		echo json_encode($content);
+		die();
 	}
 
 	public function ajax_init(){
@@ -96,18 +107,15 @@ CREATE TABLE `{$this->url_table}` (
 
 		$urls = $this->insert_all_url();
 		$sql = $wpdb->prepare(
-			"select type, count(*) as count from {$this->url_table} where `last_upload` < %s group by type",
+			"select type, count(*) as count from {$this->url_table} where `last_upload` < %s and enable = 1 group by type",
 			$this->fetch_start_time()
 			);
 		$all_urls = $wpdb->get_results($sql);
 
-		header('Content-Type: application/json; charset=utf-8');
-		if (!is_wp_error($all_urls)) {
-			echo json_encode(array('result' => true, 'urls_count' => $all_urls));
-		} else {
-			echo json_encode(array('result' => false));
-		}
-		die();
+		$this->json_output(
+			!is_wp_error($all_urls)
+			? array('result' => true, 'urls_count' => $all_urls)
+			: array('result' => false));
 	}
 
 	public function ajax_fetch(){
@@ -115,11 +123,8 @@ CREATE TABLE `{$this->url_table}` (
 			wp_die('Forbidden');
 
 		$url = $this->fetch_url();
-		if (!$url) {
-			header('Content-Type: application/json; charset=utf-8');
-			echo json_encode(array('result' => false));
-			die();
-		}
+		if (!$url)
+			$this->json_output(array('result' => false, 'final' => true));
 
 		$result = array();
 		$static_file = $this->create_static_file($url->url, $url->type, true, true);
@@ -175,8 +180,8 @@ CREATE TABLE `{$this->url_table}` (
 			}
 		}
 
-		$limit = ($url->type == 'static_file' ? 100 : 10);
 		while ($url = $this->fetch_url()) {
+			$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
 			$static_file = $this->create_static_file($url->url, $url->type, true, true);
 			$file_count++;
 			$result[$url->ID] = array(
@@ -186,13 +191,11 @@ CREATE TABLE `{$this->url_table}` (
 				'url' => $url->url,
 				'static' => $static_file,
 				);
-			if ($file_count > $limit)
+			if ($file_count >= $limit)
 				break;
 		}
 
-		header('Content-Type: application/json; charset=utf-8');
-		echo json_encode(array('result' => true, 'files' => $result, 'final' => ($url === false)));
-		die();
+		$this->json_output(array('result' => true, 'files' => $result, 'final' => ($url === false)));
 	}
 
 	public function ajax_finalyze(){
@@ -201,9 +204,7 @@ CREATE TABLE `{$this->url_table}` (
 
 		$this->fetch_finalyze();
 
-		header('Content-Type: application/json; charset=utf-8');
-		echo json_encode(array('result' => true));
-		die();
+		$this->json_output(array('result' => true));
 	}
 
 	public function replace_url($url){
@@ -273,7 +274,7 @@ CREATE TABLE `{$this->url_table}` (
 		global $wpdb;
 
 		$sql = $wpdb->prepare(
-			"select ID, type, url, pages from {$this->url_table} where `last_upload` < %s and ID > %d order by ID limit 1",
+			"select ID, type, url, pages from {$this->url_table} where `last_upload` < %s and ID > %d and enable = 1 order by ID limit 1",
 			$this->fetch_start_time(),
 			$this->fetch_last_id()
 			);
@@ -291,7 +292,7 @@ CREATE TABLE `{$this->url_table}` (
 		global $wpdb;
 
 		$sql = $wpdb->prepare(
-			"select ID, type, url, pages from {$this->url_table} where `last_upload` < %s",
+			"select ID, type, url, pages from {$this->url_table} where `last_upload` < %s and enable = 1",
 			$this->fetch_start_time()
 			);
 		return $wpdb->get_results($sql);
@@ -340,12 +341,15 @@ CREATE TABLE `{$this->url_table}` (
 			break;
 		case 'static_file':
 			$file_source = untrailingslashit(ABSPATH) . $url;
-			if (!file_exists($file_source))
+			if (!file_exists($file_source)) {
+				$this->delete_url(array($url));
 				return false;
-			if ($file_source != $file_dest && (!file_exists($file_dest) || filemtime($file_source) > filemtime($file_dest)))
+			}
+			if ($file_source != $file_dest && (!file_exists($file_dest) || filemtime($file_source) > filemtime($file_dest))) {
 				$file_date = date('Y-m-d h:i:s', filemtime($file_source));
 				$this->make_subdirectories($file_dest);
 				copy($file_source, $file_dest);
+			}
 			break;
 		}
 		if (file_exists($file_dest)) {
@@ -417,6 +421,50 @@ CREATE TABLE `{$this->url_table}` (
 			$sql = $wpdb->prepare(
 				"select ID from {$this->url_table} where url=%s limit 1",
 				$url['url']);
+
+			$url['enable'] = 1;
+			if (preg_match('#\.php$#i', $url['url'])) {
+				$url['enable'] = 0;
+			} else if (preg_match('#\?[^=]+[=]?#i', $url['url'])) {
+				$url['enable'] = 0;
+			} else if ($url['type'] == 'static_file') {
+				$file_source = untrailingslashit(ABSPATH) . $url['url'];
+				$file_dest = untrailingslashit($this->static_dir) . $url['url'];
+				if ($file_source === $file_dest) {
+					$url['enable'] = 0;
+				} else if (!file_exists($file_source)) {
+					$url['enable'] = 0;
+				} else if (!file_exists($file_dest))  {
+					$url['enable'] = 1;
+				} else if (filemtime($file_source) <= filemtime($file_dest)) {
+					$url['enable'] = 0;
+				}
+
+				if ($url['enable'] == 1) {
+					$plugin_dir = trailingslashit(str_replace(ABSPATH, '/', WP_PLUGIN_DIR));
+					$theme_dir  = trailingslashit(str_replace(ABSPATH, '/', WP_CONTENT_DIR) . '/themes');
+					if (preg_match('#^'.preg_quote($plugin_dir).'#i', $url['url'])){
+						$url['enable'] = 0;
+						$active_plugins = get_settings('active_plugins');
+						foreach ($active_plugins as $active_plugin) {
+							$active_plugin = trailingslashit($plugin_dir . dirname($active_plugin));
+							if ($active_plugin == trailingslashit($plugin_dir . '.'))
+								continue;
+							if (preg_match('#^'.preg_quote($active_plugin).'#i', $url['url'])) {
+								$url['enable'] = 1;
+								break;
+							}
+						}
+					} else if (preg_match('#^'.preg_quote($theme_dir).'#i', $url['url'])) {
+						$url['enable'] = 0;
+						$current_theme = trailingslashit($theme_dir . get_stylesheet());
+						if (preg_match('#^'.preg_quote($current_theme).'#i', $url['url'])) {
+							$url['enable'] = 1;
+						}
+					}
+				}
+			}
+
 			if ($id = $wpdb->get_var($sql)){
 				$sql = "update {$this->url_table}";
 				$update_sql = array();
@@ -435,6 +483,21 @@ CREATE TABLE `{$this->url_table}` (
 				$insert_val[] = $wpdb->prepare("%s", date('Y-m-d h:i:s'));
 				$sql .= ' values (' . implode(',', $insert_val) . ')';
 			}
+			if ($sql)
+				$wpdb->query($sql);
+		}
+		return $urls;
+	}
+
+	private function delete_url($urls){
+		global $wpdb;
+
+		foreach ((array)$urls as $url){
+			if (!isset($url['url']) || !$url['url'])
+				continue;
+			$sql = $wpdb->prepare(
+				"delete from {$this->url_table} where url=%s",
+				$url['url']);
 			if ($sql)
 				$wpdb->query($sql);
 		}
