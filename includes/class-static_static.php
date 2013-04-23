@@ -561,7 +561,6 @@ select ID, post_type, post_content, post_status, post_modified
 			$permalink = get_permalink($post->ID);
 			if (is_wp_error($permalink))
 				continue;
-			$permalink = str_replace($home_url, '', $permalink);
 			$count = 1;
 			if ( $splite = preg_split("#<!--nextpage-->#", $post->post_content) )
 				$count = count($splite);
@@ -619,7 +618,6 @@ select MAX(P.post_modified) as last_modified, count(P.ID) as count
 				$termlink = get_term_link($term->slug, $taxonomy);
 				if (is_wp_error($termlink))
 					continue;
-				$termlink = str_replace($home_url, '', $termlink);
 				list($modified, $page_count) = $this->get_term_info($term_id);
 				$urls[] = array(
 					'type' => $url_type,
@@ -642,7 +640,6 @@ select MAX(P.post_modified) as last_modified, count(P.ID) as count
 					$termlink = get_term_link($term->name, $taxonomy);
 					if (is_wp_error($termlink))
 						continue;
-					$termlink = str_replace($home_url, '', $termlink);
 					list($modified, $page_count) = $this->get_term_info($term_id);
 					$urls[] = array(
 						'type' => $url_type,
