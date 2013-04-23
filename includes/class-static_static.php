@@ -710,7 +710,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		foreach ($static_files as $static_file){
 			$urls[] = array(
 				'type' => $url_type,
-				'url' => apply_filters('static_static::get_url', str_replace(ABSPATH, '/', $static_file)),
+				'url' => apply_filters('static_static::get_url', str_replace(trailingslashit(ABSPATH), trailingslashit($this->get_site_url()), $static_file)),
 				'last_modified' => date('Y-m-d h:i:s', filemtime($static_file)),
 				);
 		}
