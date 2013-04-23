@@ -69,7 +69,7 @@ class static_static_admin {
 		}
 
 ?>
-		<div class="wrap">
+		<div class="wrap" id="static-static-options">
 		<?php screen_icon(); ?>
 		<h2><?php echo esc_html( $title ); ?></h2>
 		<form method="post" action="<?php echo $this->admin_action;?>">
@@ -95,7 +95,7 @@ class static_static_admin {
 	private function static_static_page(){
 		$title = __('Static Static', self::TEXT_DOMAIN);
 ?>
-		<div class="wrap" style="margin=top:2em;">
+		<div class="wrap" style="margin=top:2em;" id="static-static-rebuild">
 		<?php screen_icon(); ?>
 		<h2><?php echo esc_html( $title ); ?></h2>
 		<?php submit_button(__('Rebuild',   self::TEXT_DOMAIN), 'primary', 'rebuild'); ?>
@@ -117,6 +117,7 @@ jQuery(function($){
 
 	function static_static_init(){
 		file_count = 0;
+		$('#static-static-options, #rebuild').hide();
 		$('#rebuild-result')
 			.html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>')
 			.after(loader);
@@ -139,8 +140,10 @@ jQuery(function($){
 				static_static_fetch();
 			},
 			error: function(){
+				$('#static-static-options, #rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
 		});
@@ -174,8 +177,10 @@ jQuery(function($){
 				}
 			},
 			error: function(){
+				$('#static-static-options, #rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
 		});
@@ -189,13 +194,17 @@ jQuery(function($){
 			type: 'POST',
 			success: function(response){
 				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+				$('#static-static-options, #rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			},
 			error: function(){
+				$('#static-static-options, #rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
 		});
