@@ -2,6 +2,7 @@
 class static_static {
 	const FETCH_LIMIT        =  20;
 	const FETCH_LIMIT_STATIC = 100;
+	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
 
 	private $plugin_basename;
 
@@ -22,10 +23,8 @@ class static_static {
 		global $wpdb;
 
 		$this->plugin_basename = $plugin_basename;
-
 		$this->url_table = $wpdb->prefix.'urls';
-
-		$this->init_params($static_dir, $static_url);
+		$this->init_params($static_url, $static_dir);
 
 		add_filter('static_static::get_url', array(&$this, 'replace_url'));
 		add_filter('static_static::static_url', array(&$this, 'static_url'));
@@ -35,7 +34,7 @@ class static_static {
 		add_action('wp_ajax_static_static_finalyze', array(&$this, 'ajax_finalyze'));
 	}
 
-	private function init_params($static_dir, $static_url){
+	private function init_params($static_url, $static_dir){
 		global $wpdb;
 
 		$parsed   = parse_url($this->get_site_url());
@@ -256,7 +255,7 @@ CREATE TABLE `{$this->url_table}` (
 		} else {
 			$start_time = date('Y-m-d h:i:s', time());
 			$param['fetch_start_time'] = $start_time;
-			set_transient($transient_key, $param);
+			set_transient($transient_key, $param, self::EXPIRES);
 			return $start_time;
 		}
 	}
@@ -270,7 +269,7 @@ CREATE TABLE `{$this->url_table}` (
 		if ($next_id) {
 			$last_id = $next_id;
 			$param['fetch_last_id'] = $next_id;
-			set_transient($transient_key, $param);
+			set_transient($transient_key, $param, self::EXPIRES);
 		}
 		return $last_id;
 	}
@@ -326,7 +325,6 @@ CREATE TABLE `{$this->url_table}` (
 		$url = apply_filters('static_static::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
 
-		// get remote file
 		$http_code = 200;
 		switch ($file_type) {
 		case 'front_page':
@@ -334,12 +332,13 @@ CREATE TABLE `{$this->url_table}` (
 		case 'term_archive':
 		case 'author_archive':
 		case 'other_page':
+			// get remote file
 			if (($content = $this->remote_get($url)) && isset($content['body'])) {
 				$http_code = intval($content['code']);
 				switch (intval($http_code)) {
 				case 200:
 					if ($crawling)
-						$this->other_url($content['body']);
+						$this->other_url($content['body'], $url);
 				case 404:
 					if ($create_404 || $http_code == 200) {
 						$content = $this->replace_relative_URI($content['body']);
@@ -351,6 +350,7 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			break;
 		case 'static_file':
+			// get static file
 			$file_source = untrailingslashit(ABSPATH) . $url;
 			if (!file_exists($file_source)) {
 				$this->delete_url(array($url));
@@ -363,6 +363,7 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			break;
 		}
+
 		if (file_exists($file_dest)) {
 			$this->update_url(array(array(
 				'type' => $file_type,
@@ -382,6 +383,7 @@ CREATE TABLE `{$this->url_table}` (
 				'last_upload' => date('Y-m-d h:i:s', time()),
 				)));
 		}
+
 		return $file_dest;
 	}
 
@@ -712,31 +714,48 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		return $urls;
 	}
 
-	private function other_url($content){
+	private function url_exists($link) {
 		global $wpdb;
 
+		$link = apply_filters('static_static::get_url', $link);
+		$sql = $wpdb->prepare(
+			"select count(*) from {$this->url_table} where `url` = %s limit 1",
+			$link
+			);
+		$count = intval($wpdb->get_var($sql));
+		
+		return $count > 0;
+	}
+
+	private function other_url($content, $url){
 		$urls = array();
+
+		while (($url = dirname($url)) && $url != '/') {
+			if (!$this->url_exists($url)) {
+				$urls[] = array(
+					'url' => apply_filters('static_static::get_url', $url),
+					'last_modified' => date('Y-m-d h:i:s'),
+					);
+			}
+		}
+
 		$pattern = '#href=[\'"](' . preg_quote($this->get_site_url()) . '[^\'"\?\#]+)[^\'"]*[\'"]#i';
 		if ( preg_match_all($pattern, $content, $matches) ){
 			$matches = array_unique($matches[1]);
 			foreach ($matches as $link) {
-				$link = apply_filters('static_static::get_url', $link);
-				$sql = $wpdb->prepare(
-					"select count(*) from {$this->url_table} where `url` = %s limit 1",
-					$link
-					);
-				$count = intval($wpdb->get_var($sql));
-				if ($count === 0) {
+				if (!$this->url_exists($link)) {
 					$urls[] = array(
-						'url' => $link,
+						'url' => apply_filters('static_static::get_url', $link),
 						'last_modified' => date('Y-m-d h:i:s'),
 						);
 				}
 			}
 		}
 		unset($matches);
+
 		if (count($urls) > 0)
 			$this->update_url($urls);
+
 		return $urls;
 	}
 

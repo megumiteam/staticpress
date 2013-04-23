@@ -120,57 +120,84 @@ jQuery(function($){
 		$('#rebuild-result')
 			.html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>')
 			.after(loader);
-		$.post('<?php echo $admin_ajax; ?>',{
-			action: 'static_static_init'
-		}, function(response){
-			<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
-			if (response.result) {
-				$('#rebuild-result').append('<p><strong><?php echo __('URLS',   self::TEXT_DOMAIN);?></strong></p>')
-				var ul = $('<ul></ul>');
-				$.each(response.urls_count, function(){
-					ul.append('<li>' + this.type + ' (' + this.count + ')</li>');
-				});
-				$('#rebuild-result').append('<p></p>').append(ul);
+		$.ajax('<?php echo $admin_ajax; ?>',{
+			data: {action: 'static_static_init'},
+			cache: false,
+			dataType: 'json',
+			type: 'POST',
+			success: function(response){
+				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+				if (response.result) {
+					$('#rebuild-result').append('<p><strong><?php echo __('URLS',   self::TEXT_DOMAIN);?></strong></p>')
+					var ul = $('<ul></ul>');
+					$.each(response.urls_count, function(){
+						ul.append('<li>' + this.type + ' (' + this.count + ')</li>');
+					});
+					$('#rebuild-result').append('<p></p>').append(ul);
+				}
+				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...',   self::TEXT_DOMAIN);?></strong></p>');				
+				static_static_fetch();
+			},
+			error: function(){
+				$('#loader').remove();
+				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				file_count = 0;
 			}
-			$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...',   self::TEXT_DOMAIN);?></strong></p>');				
-			static_static_fetch();
 		});
 	}
 
 	function static_static_fetch(){
-		$.post('<?php echo $admin_ajax; ?>',{
-			action: 'static_static_fetch'
-		}, function(response){
-			if ($('#rebuild-result ul.result-list').size() == 0)
-				$('#rebuild-result').append('<p class="result-list-wrap"><ul class="result-list"></ul></p>');				
-			if (response.result) {
-				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
-				var ul = $('#rebuild-result ul.result-list');
-				$.each(response.files, function(){
-					if (this.static) {
-						file_count++;
-						ul.append('<li>' + file_count + ' : ' + this.static + '</li>');
-					}
-				});
-				$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
-				if (response.final)
+		$.ajax('<?php echo $admin_ajax; ?>',{
+			data: {action: 'static_static_fetch'},
+			cache: false,
+			dataType: 'json',
+			type: 'POST',
+			success: function(response){
+				if ($('#rebuild-result ul.result-list').size() == 0)
+					$('#rebuild-result').append('<p class="result-list-wrap"><ul class="result-list"></ul></p>');				
+				if (response.result) {
+					<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+					var ul = $('#rebuild-result ul.result-list');
+					$.each(response.files, function(){
+						if (this.static) {
+							file_count++;
+							ul.append('<li>' + file_count + ' : ' + this.static + '</li>');
+						}
+					});
+					$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
+					if (response.final)
+						static_static_finalyze();
+					else
+						static_static_fetch();
+				} else {
 					static_static_finalyze();
-				else
-					static_static_fetch();
-			} else {
-				static_static_finalyze();
+				}
+			},
+			error: function(){
+				$('#loader').remove();
+				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				file_count = 0;
 			}
 		});
 	}
 
 	function static_static_finalyze(){
-		$.post('<?php echo $admin_ajax; ?>',{
-			action: 'static_static_finalyze'
-		}, function(response){
-			<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
-			$('#loader').remove();
-			$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
-			file_count = 0;
+		$.ajax('<?php echo $admin_ajax; ?>',{
+			data: {action: 'static_static_finalyze'},
+			cache: false,
+			dataType: 'json',
+			type: 'POST',
+			success: function(response){
+				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+				$('#loader').remove();
+				$('#rebuild-result').append('<p><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+				file_count = 0;
+			},
+			error: function(){
+				$('#loader').remove();
+				$('#rebuild-result').append('<p><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');				
+				file_count = 0;
+			}
 		});
 	}
 
