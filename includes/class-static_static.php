@@ -29,6 +29,9 @@ class static_static {
 
 		add_filter('static_static::get_url', array(&$this, 'replace_url'));
 		add_filter('static_static::static_url', array(&$this, 'static_url'));
+		add_filter('static_static::put_content', array(&$this, 'rewrite_generator_tag'));
+		add_filter('static_static::put_content', array(&$this, 'add_last_modified'));
+		add_filter('static_static::put_content', array(&$this, 'remove_link_tag'));
 		add_filter('static_static::put_content', array(&$this, 'replace_relative_URI'));
 
 		add_action('wp_ajax_static_static_init', array(&$this, 'ajax_init'));
@@ -404,7 +407,16 @@ CREATE TABLE `{$this->url_table}` (
 		return $file_dest;
 	}
 
-	private function remove_link_tag($content) {
+	private function remote_get($url){
+		if (!preg_match('#^https://#i', $url))
+			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i', $url) ? $url : "/{$url}");
+		$response = wp_remote_get($url, $this->remote_get_option);
+		if (is_wp_error($response))
+			return false;
+		return array('code' => $response["response"]["code"], 'body' => $this->remove_link_tag($response["body"]));
+	}
+
+	public function remove_link_tag($content) {
 		$content = preg_replace(
 			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI|shortlink|wlwmanifest)[\'"][^>]+/>\n#ism',
 			'',
@@ -416,21 +428,23 @@ CREATE TABLE `{$this->url_table}` (
 		return $content;
 	}
 
-	private function remote_get($url){
-		if (!preg_match('#^https://#i', $url))
-			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i', $url) ? $url : "/{$url}");
-		$response = wp_remote_get($url, $this->remote_get_option);
-		if (is_wp_error($response))
-			return false;
-		return array('code' => $response["response"]["code"], 'body' => $this->remove_link_tag($response["body"]));
+	public function	add_last_modified($content) {
+		$last_modified = sprintf(
+			'<meta http-equiv="Last-Modified" content="%s GMT" />',
+			gmdate("D, d M Y H:i:s"));
+		$content = preg_replace('#(<head>|<head [^>]+>)#ism', '$1'."\n".$last_modified, $content);
+		return $content;
 	}
 
-	public function replace_relative_URI($content) {
+	public function	rewrite_generator_tag($content) {
 		$content = preg_replace(
 			'#^([ \t]*<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/>\n)#ism',
 			'$1$2 with Static Static'.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
 			$content);
+		return $content;
+	}
 
+	public function replace_relative_URI($content) {
 		$site_url = trailingslashit($this->get_site_url());
 		$parsed = parse_url($site_url);
 		$home_url = $parsed['scheme'] . '://' . $parsed['host'];
