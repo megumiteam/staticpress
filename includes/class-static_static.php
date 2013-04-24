@@ -417,7 +417,7 @@ CREATE TABLE `{$this->url_table}` (
 
 	private function remote_get($url){
 		if (!preg_match('#^https://#i', $url))
-			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i') ? $url : "/{$url}");
+			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i', $url) ? $url : "/{$url}");
 		$response = wp_remote_get($url, $this->remote_get_option);
 		if (is_wp_error($response))
 			return false;
