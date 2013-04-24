@@ -3,8 +3,9 @@ if ( !class_exists('InputValidator') )
 	require_once(dirname(__FILE__).'/class-InputValidator.php');
 
 class static_static_admin {
-	const OPTION_STATIC_URL  = 'static static::static url';
-	const OPTION_STATIC_DIR  = 'static static::static dir';
+	const OPTION_STATIC_URL   = 'static static::static url';
+	const OPTION_STATIC_DIR   = 'static static::static dir';
+	const OPTION_STATIC_BASIC = 'static static::basic auth';
 	const OPTION_PAGE = 'static-static';
 	const TEXT_DOMAIN = 'static-static';
 	const DEBUG_MODE  = TRUE;
@@ -12,10 +13,12 @@ class static_static_admin {
 	private $plugin_basename;
 	private $static_url;
 	private $static_dir;
+	private $basic_auth;
 
 	function __construct($plugin_basename){
-		$this->static_url = get_option(static_static_admin::OPTION_STATIC_URL, '/');
-		$this->static_dir = get_option(static_static_admin::OPTION_STATIC_DIR, ABSPATH);
+		$this->static_url = get_option(self::OPTION_STATIC_URL, $this->get_site_url().'static/');
+		$this->static_dir = get_option(self::OPTION_STATIC_DIR, ABSPATH);
+		$this->basic_auth = get_option(self::OPTION_STATIC_BASIC, false);
 		$this->plugin_basename = $plugin_basename;
 
 		add_action('admin_menu', array(&$this, 'admin_menu'));
@@ -28,6 +31,22 @@ class static_static_admin {
 
 	public function static_dir(){
 		return $this->static_dir;
+	}
+
+	public function remote_get_option(){
+		return 
+			$this->basic_auth
+			? array('headers' => array('Authorization' => 'Basic '.$this->basic_auth))
+			: array();
+	}
+
+	private function get_site_url(){
+		global $current_blog;
+		return trailingslashit(
+			isset($current_blog)
+			? get_home_url($current_blog->blog_id)
+			: get_home_url()
+			);
 	}
 
 	//**************************************************************************************
@@ -49,16 +68,25 @@ class static_static_admin {
 		$iv->set_rules($nonce_name, 'required');
 		$iv->set_rules('static_url', array('trim','esc_html'));
 		$iv->set_rules('static_dir', array('trim','esc_html'));
+		$iv->set_rules('basic_usr',  array('trim','esc_html'));
+		$iv->set_rules('basic_pwd',  array('trim','esc_html'));
 
 		// Update options
 		if (!is_wp_error($iv->input($nonce_name)) && check_admin_referer($nonce_action, $nonce_name)) {
 			// Get posted options
 			$static_url = $iv->input('static_url');
 			$static_dir = $iv->input('static_dir');
+			$basic_usr  = $iv->input('basic_usr');
+			$basic_pwd  = $iv->input('basic_pwd');
+			$basic_auth = 
+				($basic_usr && $basic_pwd)
+				? base64_encode("{$basic_usr}:{$basic_pwd}")
+				: false;
 
 			// Update options
 			update_option(self::OPTION_STATIC_URL, $static_url);
 			update_option(self::OPTION_STATIC_DIR, $static_dir);
+			update_option(self::OPTION_STATIC_BASIC, $basic_auth);
 			printf(
 				'<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n",
 				empty($err_message) ? __('Done!', self::TEXT_DOMAIN) : $err_message
@@ -66,8 +94,12 @@ class static_static_admin {
 
 			$this->static_url = $static_url;
 			$this->static_dir = $static_dir;
+			$this->basic_auth = $basic_auth;
 		}
 
+		$basic_usr = $basic_pwd = '';
+		if ( $this->basic_auth )
+			list($basic_usr,$basic_pwd) = explode(':', base64_decode($this->basic_auth));
 ?>
 		<div class="wrap" id="static-static-options">
 		<?php screen_icon(); ?>
@@ -76,7 +108,9 @@ class static_static_admin {
 		<?php echo wp_nonce_field($nonce_action, $nonce_name, true, false) . "\n"; ?>
 		<table class="wp-list-table fixed"><tbody>
 		<?php $this->input_field('static_url', __('Static URL', self::TEXT_DOMAIN), $this->static_url); ?>
-		<?php $this->input_field('static_dir', __('Save DIR',   self::TEXT_DOMAIN), $this->static_dir); ?>
+		<?php $this->input_field('static_dir', __('Save DIR (Document root)', self::TEXT_DOMAIN), $this->static_dir); ?>
+		<?php $this->input_field('basic_usr', __('(OPTION) BASIC Auth User', self::TEXT_DOMAIN), $basic_usr); ?>
+		<?php $this->input_field('basic_pwd', __('(OPTION) BASIC Auth Password', self::TEXT_DOMAIN), $basic_pwd, 'password'); ?>
 		</tbody></table>
 		<?php submit_button(); ?>
 		</form>
@@ -86,9 +120,9 @@ class static_static_admin {
 		$this->static_static_page();
 	}
 
-	private function input_field($field, $label, $val){
+	private function input_field($field, $label, $val, $type = 'text'){
 		$label = sprintf('<th><label for="%1$s">%2$s</label></th>'."\n", $field, $label);
-		$input_field = sprintf('<td><input type="text" name="%1$s" value="%2$s" id="%1$s" size=100 /></td>'."\n", $field, esc_attr($val));
+		$input_field = sprintf('<td><input type="%3$s" name="%1$s" value="%2$s" id="%1$s" size=100 /></td>'."\n", $field, esc_attr($val), $type);
 		echo "<tr>\n{$label}{$input_field}</tr>\n";
 	}
 

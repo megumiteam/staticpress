@@ -11,7 +11,7 @@ class static_static {
 	private $static_home_url;
 	private $url_table;
 	private $static_dir;
-	private $post_types;
+	private $remote_get_option;
 
 	private $transient_key = 'static static';
 
@@ -19,12 +19,12 @@ class static_static {
 		'html','htm','txt','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
 		);
 
-	function __construct($plugin_basename, $static_url = '/', $static_dir = ''){
+	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
 		global $wpdb;
 
 		$this->plugin_basename = $plugin_basename;
 		$this->url_table = $wpdb->prefix.'urls';
-		$this->init_params($static_url, $static_dir);
+		$this->init_params($static_url, $static_dir, $remote_get_option);
 
 		add_filter('static_static::get_url', array(&$this, 'replace_url'));
 		add_filter('static_static::static_url', array(&$this, 'static_url'));
@@ -34,7 +34,7 @@ class static_static {
 		add_action('wp_ajax_static_static_finalyze', array(&$this, 'ajax_finalyze'));
 	}
 
-	private function init_params($static_url, $static_dir){
+	private function init_params($static_url, $static_dir, $remote_get_option){
 		global $wpdb;
 
 		$parsed   = parse_url($this->get_site_url());
@@ -57,6 +57,8 @@ class static_static {
 			$this->static_dir .= $this->static_home_url;
 		}
 		$this->make_subdirectories($this->static_dir);
+
+		$this->remote_get_option = $remote_get_option;
 
 		$this->create_table();
 	}
@@ -101,7 +103,7 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	private function json_output($content){
-		header('Content-Type: application/json; charset=utf-8');
+		header('Content-Type: application/json; charset='.get_option('blog_charset'));
 		echo json_encode($content);
 		die();
 	}
@@ -400,7 +402,7 @@ CREATE TABLE `{$this->url_table}` (
 	private function remote_get($url){
 		if (!preg_match('#^https://#i', $url))
 			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i') ? $url : "/{$url}");
-		$response = wp_remote_get($url);
+		$response = wp_remote_get($url, $this->remote_get_option);
 		if (is_wp_error($response))
 			return false;
 		return array('code' => $response["response"]["code"], 'body' => $response["body"]);
