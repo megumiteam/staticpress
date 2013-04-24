@@ -405,7 +405,7 @@ CREATE TABLE `{$this->url_table}` (
 
 	private function remove_link_tag($content) {
 		$content = preg_replace(
-			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI|shortlink)[\'"][^>]+/>\n#ism',
+			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI|shortlink|wlwmanifest)[\'"][^>]+/>\n#ism',
 			'',
 			$content);
 		$content = preg_replace(
