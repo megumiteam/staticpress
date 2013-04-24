@@ -29,6 +29,7 @@ class static_static {
 
 		add_filter('static_static::get_url', array(&$this, 'replace_url'));
 		add_filter('static_static::static_url', array(&$this, 'static_url'));
+		add_filter('static_static::put_content', array(&$this, 'replace_relative_URI'));
 
 		add_action('wp_ajax_static_static_init', array(&$this, 'ajax_init'));
 		add_action('wp_ajax_static_static_fetch', array(&$this, 'ajax_fetch'));
@@ -357,7 +358,7 @@ CREATE TABLE `{$this->url_table}` (
 						$this->other_url($content['body'], $url);
 				case 404:
 					if ($create_404 || $http_code == 200) {
-						$content = $this->replace_relative_URI($content['body']);
+						$content = apply_filters('static_static::put_content', $content['body']);
 						$this->make_subdirectories($file_dest);
 						file_put_contents($file_dest, $content);
 						$file_date = date('Y-m-d h:i:s', filemtime($file_dest));
@@ -421,11 +422,10 @@ CREATE TABLE `{$this->url_table}` (
 		$response = wp_remote_get($url, $this->remote_get_option);
 		if (is_wp_error($response))
 			return false;
-		$body = $this->remove_link_tag($response["body"]);
-		return array('code' => $response["response"]["code"], 'body' => $body);
+		return array('code' => $response["response"]["code"], 'body' => $this->remove_link_tag($response["body"]));
 	}
 
-	private function replace_relative_URI($content) {
+	public function replace_relative_URI($content) {
 		$content = preg_replace(
 			'#^([ \t]*<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/>\n)#ism',
 			'$1$2 with Static Static'.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
@@ -457,6 +457,8 @@ CREATE TABLE `{$this->url_table}` (
 
 		$pattern  = '#<(meta [^>]*property=[\'"]og:[^\'"]*[\'"] [^>]*content=|link [^>]*rel=[\'"]canonical[\'"] [^>]*href=|link [^>]*rel=[\'"]shortlink[\'"] [^>]*href=|data-href=|data-url=)[\'"](/[^\'"]*)[\'"]([^>]*)>#uism';
 		$content = preg_replace($pattern, '<$1"'.$static_url.'$2"$3>', $content);
+
+		$content = str_replace(addcslashes($site_url, '/'), addcslashes(trailingslashit($this->static_url), '/'), $content);
 
 		return $content;
 	}
