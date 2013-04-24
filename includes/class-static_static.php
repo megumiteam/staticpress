@@ -555,7 +555,7 @@ CREATE TABLE `{$this->url_table}` (
 			if (!isset($url['url']) || !$url['url'])
 				continue;
 			$sql = $wpdb->prepare(
-				"delete from {$this->url_table} where url=%s",
+				"delete from `{$this->url_table}` where `url` = %s",
 				$url['url']);
 			if ($sql)
 				$wpdb->query($sql);
@@ -564,6 +564,9 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	private function get_urls(){
+		global $wpdb;
+
+		$wpdb->query("delete from `{$this->url_table}` where `last_statuscode` != 200");
 		$this->post_types = "'".implode("','",get_post_types(array('public' => true)))."'";
 		$urls = array();
 		$urls = array_merge($urls, $this->front_page_url());
