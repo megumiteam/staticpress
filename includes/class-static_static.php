@@ -1,10 +1,11 @@
 <?php
 class static_static {
-	const FETCH_LIMIT        =  20;
+	const FETCH_LIMIT        =   5;
 	const FETCH_LIMIT_STATIC = 100;
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
 
 	private $plugin_basename;
+	private $plugin_version;
 
 	private $static_url;
 	private $home_url;
@@ -59,6 +60,9 @@ class static_static {
 		$this->make_subdirectories($this->static_dir);
 
 		$this->remote_get_option = $remote_get_option;
+
+	    $data = get_file_data(dirname(dirname(__FILE__)).'/plugin.php', array('version' => 'Version'));
+		$this->plugin_version = isset($data['version']) ? $data['version'] : '';
 
 		$this->create_table();
 	}
@@ -399,22 +403,52 @@ CREATE TABLE `{$this->url_table}` (
 		return $file_dest;
 	}
 
+	private function remove_link_tag($content) {
+		$content = preg_replace(
+			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI)[\'"][^>]+/>\n#ism',
+			'',
+			$content);
+		$content = preg_replace(
+			'#^[ \t]*<link [^>]*rel=[\'"]alternate[\'"] [^>]*type=[\'"]application/rss\+xml[\'"][^>]+/>\n#ism',
+			'',
+			$content);
+		return $content;
+	}
+
 	private function remote_get($url){
 		if (!preg_match('#^https://#i', $url))
 			$url = untrailingslashit($this->get_site_url()) . (preg_match('#^/#i') ? $url : "/{$url}");
 		$response = wp_remote_get($url, $this->remote_get_option);
 		if (is_wp_error($response))
 			return false;
-		return array('code' => $response["response"]["code"], 'body' => $response["body"]);
+		$body = $this->remove_link_tag($response["body"]);
+		return array('code' => $response["response"]["code"], 'body' => $body);
 	}
 
 	private function replace_relative_URI($content) {
-		$content = str_replace(trailingslashit($this->get_site_url()), trailingslashit($this->static_url), $content);
+		$content = preg_replace(
+			'#^([ \t]*<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/>\n)#ism',
+			'$1$2 with Static Static'.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
+			$content);
+
+		$site_url = trailingslashit($this->get_site_url());
+		$parsed = parse_url($site_url);
+		$home_url = $parsed['scheme'] . '://' . $parsed['host'];
+		if (isset($parsed['port']))
+			$home_url .= ':'.$parsed['port'];
+
+		$pattern  = array(
+			'# (href|src|action)="(/[^"]*)"#ism',
+			"# (href|src|action)='(/[^']*)'#ism",
+		);
+		$content = preg_replace($pattern, ' $1="'.$home_url.'$2"', $content);
+
+		$content = str_replace($site_url, trailingslashit($this->static_url), $content);
 
 		$parsed = parse_url($this->static_url);
 		$static_url = $parsed['scheme'] . '://' . $parsed['host'];
 		if (isset($parsed['port']))
-			$home_url .= ':'.$parsed['port'];
+			$static_url .= ':'.$parsed['port'];
 		$pattern  = array(
 			'# (href|src|action)="'.preg_quote($static_url).'([^"]*)"#ism',
 			"# (href|src|action)='".preg_quote($static_url)."([^']*)'#ism",
@@ -452,7 +486,7 @@ CREATE TABLE `{$this->url_table}` (
 				$theme_dir   = trailingslashit(str_replace(ABSPATH, '/', WP_CONTENT_DIR) . '/themes');
 				$file_source = untrailingslashit(ABSPATH) . $url['url'];
 				$file_dest   = untrailingslashit($this->static_dir) . $url['url'];
-				$pattern     = '#^(/readme.html|/readme-ja.html|('.preg_quote($plugin_dir).'|'.preg_quote($theme_dir).').*/((readme|changelog|license)\.txt|(screenshot|screenshot-[0-9]+)\.png))$#i';
+				$pattern     = '#^(/(readme|readme-[^\.]+|license)\.(txt|html?)|('.preg_quote($plugin_dir).'|'.preg_quote($theme_dir).').*/((readme|changelog|license)\.(txt|html?)|(screenshot|screenshot-[0-9]+)\.(png|jpe?g|gif)))$#i';
 				if ($file_source === $file_dest) {
 					$url['enable'] = 0;
 				} else if (preg_match($pattern, $url['url'])) {
