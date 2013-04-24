@@ -183,21 +183,21 @@ CREATE TABLE `{$this->url_table}` (
 					'static' => $static_file,
 					);
 			}
-		} else if ($url->type == 'front_page') {
-			$page = 2;
-			$page_url = sprintf('%s/page/%d', untrailingslashit(trim($url->url)), $page);
-			while($static_file = $this->create_static_file($page_url, 'other_page', false, true)){
-				$file_count++;
-				$result["{$url->ID}-{$page}"] = array(
-					'ID' => $url->ID,
-					'page' => $page,
-					'type' => $url->type,
-					'url' => $page_url,
-					'static' => $static_file,
-					);
-				$page++;
-				$page_url = sprintf('%s/page/%d', untrailingslashit($url->url), $page);
-			}
+//		} else if ($url->type == 'front_page') {
+//			$page = 2;
+//			$page_url = sprintf('%s/page/%d', untrailingslashit(trim($url->url)), $page);
+//			while($static_file = $this->create_static_file($page_url, 'other_page', false, true)){
+//				$file_count++;
+//				$result["{$url->ID}-{$page}"] = array(
+//					'ID' => $url->ID,
+//					'page' => $page,
+//					'type' => $url->type,
+//					'url' => $page_url,
+//					'static' => $static_file,
+//					);
+//				$page++;
+//				$page_url = sprintf('%s/page/%d', untrailingslashit($url->url), $page);
+//			}
 		}
 
 		while ($url = $this->fetch_url()) {
