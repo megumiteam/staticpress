@@ -4,7 +4,7 @@ Plugin Name: Static Static
 Author: wokamoto 
 Plugin URI: http://www.digitalcube.jp/
 Description: 静的書き出しプラグイン
-Version: 0.3.0
+Version: 0.3.1
 Author URI: http://www.digitalcube.jp/
 Domain Path: /languages
 Text Domain: 
@@ -21,4 +21,5 @@ $static = new static_static(
 	$static_admin->static_dir(),
 	$static_admin->remote_get_option()
 	);
-register_activation_hook(__FILE__, array($static, 'activation'));
+register_activation_hook(__FILE__, array($static, 'activate'));
+register_deactivation_hook(__FILE__, array($static, 'deactivate'));

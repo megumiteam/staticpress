@@ -71,7 +71,7 @@ class static_static {
 		$this->create_table();
 	}
 
-	public function activation(){
+	public function activate(){
 		global $wpdb;
 
 		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table)
@@ -80,7 +80,14 @@ class static_static {
 			$wpdb->query("ALTER TABLE `{$this->url_table}` ADD COLUMN `enable` int(1) unsigned NOT NULL DEFAULT '1'");
 	}
 
-	public function create_table(){
+	public function deactivate(){
+		global $wpdb;
+
+		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table)
+			$this->drop_table();
+	}
+
+	private function create_table(){
 		global $wpdb;
 
 		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table) {
@@ -107,6 +114,14 @@ CREATE TABLE `{$this->url_table}` (
  KEY `file_date` (`file_date`),
  KEY `last_upload` (`last_upload`)
 )");
+		}
+	}
+
+	private function drop_table(){
+		global $wpdb;
+
+		if ($wpdb->get_var("show tables like '{$this->url_table}'") != $this->url_table) {
+			$wpdb->query("DROP TABLE `{$this->url_table}`");
 		}
 	}
 
@@ -171,7 +186,7 @@ CREATE TABLE `{$this->url_table}` (
 					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
 					break;
 				case 'single':
-					$page_url = sprintf('%s/%d', $page_url, $page) . "\n";
+					$page_url = sprintf('%s/%d', $page_url, $page);
 					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
 					break;
 				}
@@ -781,11 +796,16 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		global $wpdb;
 
 		$link = apply_filters('static_static::get_url', $link);
+		$count = intval(wp_cache_get('static_static::'.$link, 'static_static'));
+		if ($count > 0)
+			return true;
+
 		$sql = $wpdb->prepare(
 			"select count(*) from {$this->url_table} where `url` = %s limit 1",
 			$link
 			);
 		$count = intval($wpdb->get_var($sql));
+		wp_cache_set('static_static::'.$link, $count, 'static_static');
 		
 		return $count > 0;
 	}
