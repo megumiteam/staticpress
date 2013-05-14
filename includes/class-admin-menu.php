@@ -2,11 +2,11 @@
 if ( !class_exists('InputValidator') )
 	require_once(dirname(__FILE__).'/class-InputValidator.php');
 
-class static_static_admin {
-	const OPTION_STATIC_URL   = 'static static::static url';
-	const OPTION_STATIC_DIR   = 'static static::static dir';
-	const OPTION_STATIC_BASIC = 'static static::basic auth';
-	const OPTION_PAGE = 'static-static';
+class static_press_admin {
+	const OPTION_STATIC_URL   = 'StaticPress::static url';
+	const OPTION_STATIC_DIR   = 'StaticPress::static dir';
+	const OPTION_STATIC_BASIC = 'StaticPress::basic auth';
+	const OPTION_PAGE = 'static-press';
 	const TEXT_DOMAIN = 'static-press';
 	const DEBUG_MODE  = TRUE;
 

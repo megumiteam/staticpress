@@ -2,7 +2,7 @@
 /*
 Plugin Name: StaticPress
 Author: wokamoto 
-Plugin URI: http://www.digitalcube.jp/
+Plugin URI: https://github.com/megumiteam/staticpress
 Description: Transform your WordPress into static websites and blogs.
 Version: 0.3.3
 Author URI: http://www.digitalcube.jp/
@@ -13,7 +13,7 @@ License:
  Released under the GPL license
   http://www.gnu.org/copyleft/gpl.html
 
-  Copyright 2012 (email : wokamoto1973@gmail.com)
+  Copyright 2013 (email : wokamoto1973@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,15 +29,15 @@ License:
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-if (!class_exists('static_static_admin'))
+if (!class_exists('static_press_admin'))
 	require_once(dirname(__FILE__).'/includes/class-admin-menu.php');
-if (!class_exists('static_static'))
-	require_once(dirname(__FILE__).'/includes/class-static_static.php');
+if (!class_exists('static_press'))
+	require_once(dirname(__FILE__).'/includes/class-static_press.php');
 
-load_plugin_textdomain(static_static_admin::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages/');
+load_plugin_textdomain(static_press_admin::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages/');
 
-$static_admin = new static_static_admin(plugin_basename(__FILE__));
-$static = new static_static(
+$static_admin = new static_press_admin(plugin_basename(__FILE__));
+$static = new static_press(
 	plugin_basename(__FILE__),
 	$static_admin->static_url(),
 	$static_admin->static_dir(),

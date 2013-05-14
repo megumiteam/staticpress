@@ -1,5 +1,5 @@
 <?php
-class static_static {
+class static_press {
 	const FETCH_LIMIT        =   5;
 	const FETCH_LIMIT_STATIC = 100;
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour

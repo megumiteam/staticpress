@@ -4,12 +4,12 @@ if( !defined('ABSPATH') && !defined('WP_UNINSTALL_PLUGIN') )
 	exit();
 
 
-if (!class_exists('static_static_admin'))
+if (!class_exists('static_press_admin'))
 	require_once(dirname(__FILE__).'/includes/class-admin-menu.php');
 
-delete_option(static_static_admin::OPTION_STATIC_URL);
-delete_option(static_static_admin::OPTION_STATIC_DIR);
-delete_option(static_static_admin::OPTION_STATIC_BASIC);
+delete_option(static_press_admin::OPTION_STATIC_URL);
+delete_option(static_press_admin::OPTION_STATIC_DIR);
+delete_option(static_press_admin::OPTION_STATIC_BASIC);
 
 global $wpdb;
 
