@@ -1,0 +1,66 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: static-press\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-05-14 14:46+0900\n"
+"Language: ja_JP\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../includes/class-admin-menu.php:56 ../includes/class-admin-menu.php:130
+msgid "StaticPress"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:65
+msgid "StaticPress Options"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:92
+msgid "Done!"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:110
+msgid "Static URL"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:111
+msgid "Save DIR (Document root)"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:112
+msgid "(OPTION) BASIC Auth User"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:113
+msgid "(OPTION) BASIC Auth Password"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:135
+msgid "Rebuild"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:156
+msgid "Initialyze..."
+msgstr ""
+
+#: ../includes/class-admin-menu.php:166
+msgid "URLS"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:173
+msgid "Fetch Start..."
+msgstr ""
+
+#: ../includes/class-admin-menu.php:179 ../includes/class-admin-menu.php:216
+#: ../includes/class-admin-menu.php:240
+msgid "Error!"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:233
+msgid "End"
+msgstr ""
+
+#: ../includes/class-admin-menu.php:258
+msgid "Settings"
+msgstr ""

@@ -1,0 +1,73 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: static-press\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-05-14 14:46+0900\n"
+"PO-Revision-Date: 2013-05-14 14:50+0900\n"
+"Last-Translator: wokamoto <wokamoto1973@gmail.com>\n"
+"Language-Team: JAPANESE <http://wppluginsj.sourceforge.jp/>\n"
+"Language: ja_JP\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../includes/class-admin-menu.php:56 ../includes/class-admin-menu.php:130
+msgid "StaticPress"
+msgstr "StaticPress"
+
+#: ../includes/class-admin-menu.php:65
+msgid "StaticPress Options"
+msgstr "StaticPress 設定"
+
+#: ../includes/class-admin-menu.php:92
+msgid "Done!"
+msgstr "完了"
+
+#: ../includes/class-admin-menu.php:110
+msgid "Static URL"
+msgstr "静的サイト URL"
+
+#: ../includes/class-admin-menu.php:111
+msgid "Save DIR (Document root)"
+msgstr "出力先ディレクトリ (ドキュメントルート)"
+
+#: ../includes/class-admin-menu.php:112
+msgid "(OPTION) BASIC Auth User"
+msgstr "(オプション) BASIC 認証 ユーザー名"
+
+#: ../includes/class-admin-menu.php:113
+msgid "(OPTION) BASIC Auth Password"
+msgstr "(オプション) BASIC 認証 パスワード"
+
+#: ../includes/class-admin-menu.php:135
+msgid "Rebuild"
+msgstr "再構築"
+
+#: ../includes/class-admin-menu.php:156
+msgid "Initialyze..."
+msgstr "初期化中..."
+
+#: ../includes/class-admin-menu.php:166
+msgid "URLS"
+msgstr "URL"
+
+#: ../includes/class-admin-menu.php:173
+msgid "Fetch Start..."
+msgstr "フェッチ開始"
+
+#: ../includes/class-admin-menu.php:179 ../includes/class-admin-menu.php:216
+#: ../includes/class-admin-menu.php:240
+msgid "Error!"
+msgstr "エラー！"
+
+#: ../includes/class-admin-menu.php:233
+msgid "End"
+msgstr "終了"
+
+#: ../includes/class-admin-menu.php:258
+msgid "Settings"
+msgstr "設定"
