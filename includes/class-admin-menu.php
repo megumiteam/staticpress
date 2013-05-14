@@ -7,7 +7,7 @@ class static_static_admin {
 	const OPTION_STATIC_DIR   = 'static static::static dir';
 	const OPTION_STATIC_BASIC = 'static static::basic auth';
 	const OPTION_PAGE = 'static-static';
-	const TEXT_DOMAIN = 'static-static';
+	const TEXT_DOMAIN = 'static-press';
 	const DEBUG_MODE  = TRUE;
 
 	private $plugin_basename;
@@ -53,7 +53,7 @@ class static_static_admin {
 	// Add Admin Menu
 	//**************************************************************************************
 	public function admin_menu() {
-		$title = __('Static Static', self::TEXT_DOMAIN);
+		$title = __('StaticPress', self::TEXT_DOMAIN);
 		$this->admin_hook = add_options_page($title, $title, 'manage_options', self::OPTION_PAGE, array(&$this, 'options_page'));
 		$this->admin_action = admin_url('/options-general.php') . '?page=' . self::OPTION_PAGE;
 	}
@@ -62,7 +62,7 @@ class static_static_admin {
 		$nonce_action  = 'update_options';
 		$nonce_name    = '_wpnonce_update_options';
 
-		$title = __('Static Static Options', self::TEXT_DOMAIN);
+		$title = __('StaticPress Options', self::TEXT_DOMAIN);
 
 		$iv = new InputValidator('POST');
 		$iv->set_rules($nonce_name, 'required');
@@ -127,7 +127,7 @@ class static_static_admin {
 	}
 
 	private function static_static_page(){
-		$title = __('Static Static', self::TEXT_DOMAIN);
+		$title = __('StaticPress', self::TEXT_DOMAIN);
 ?>
 		<div class="wrap" style="margin=top:2em;" id="static-static-rebuild">
 		<?php screen_icon(); ?>

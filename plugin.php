@@ -4,7 +4,7 @@ Plugin Name: StaticPress
 Author: wokamoto 
 Plugin URI: http://www.digitalcube.jp/
 Description: 静的書き出しプラグイン
-Version: 0.3.2
+Version: 0.3.3
 Author URI: http://www.digitalcube.jp/
 Domain Path: /languages
 Text Domain: 
