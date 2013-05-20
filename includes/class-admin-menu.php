@@ -8,21 +8,26 @@ class static_press_admin {
 	const OPTION_STATIC_BASIC = 'StaticPress::basic auth';
 	const OPTION_PAGE = 'static-press';
 	const TEXT_DOMAIN = 'static-press';
-	const DEBUG_MODE  = TRUE;
+	const DEBUG_MODE  = false;
+	const ACCESS_LEVEL = 'manage_options';
 
 	private $plugin_basename;
 	private $static_url;
 	private $static_dir;
 	private $basic_auth;
+	private $admin_action;
 
 	function __construct($plugin_basename){
 		$this->static_url = get_option(self::OPTION_STATIC_URL, $this->get_site_url().'static/');
 		$this->static_dir = get_option(self::OPTION_STATIC_DIR, ABSPATH);
 		$this->basic_auth = get_option(self::OPTION_STATIC_BASIC, false);
 		$this->plugin_basename = $plugin_basename;
+		$this->admin_action = admin_url('/admin.php') . '?page=' . self::OPTION_PAGE . '-options';
 
 		add_action('admin_menu', array(&$this, 'admin_menu'));
 		add_filter('plugin_action_links', array(&$this, 'plugin_setting_links'), 10, 2 );
+
+		add_action('admin_head', array($this,'add_admin_head'), 99);
 	}
 
 	public function static_url(){
@@ -53,9 +58,47 @@ class static_press_admin {
 	// Add Admin Menu
 	//**************************************************************************************
 	public function admin_menu() {
-		$title = __('StaticPress', self::TEXT_DOMAIN);
-		$this->admin_hook = add_options_page($title, $title, 'manage_options', self::OPTION_PAGE, array(&$this, 'options_page'));
-		$this->admin_action = admin_url('/options-general.php') . '?page=' . self::OPTION_PAGE;
+		$hook = add_menu_page(
+			__('StaticPress', self::TEXT_DOMAIN) ,
+			__('StaticPress', self::TEXT_DOMAIN) ,
+			self::ACCESS_LEVEL,
+			self::OPTION_PAGE ,
+			array($this, 'static_static_page') ,
+			plugins_url('images/staticpress.png')
+			);
+		add_action('admin_print_scripts-'.$hook, array($this, 'add_admin_scripts'));
+
+		$hook = add_submenu_page(
+			self::OPTION_PAGE ,
+			__('StaticPress Options', self::TEXT_DOMAIN) ,
+			__('StaticPress Options', self::TEXT_DOMAIN) ,
+			self::ACCESS_LEVEL,
+			self::OPTION_PAGE . '-options' ,
+			array($this, 'options_page'),
+			plugins_url('images/staticpress_options.png')
+			);
+	}
+
+	public function add_admin_scripts(){
+	}
+
+	public function add_admin_head(){
+
+?>
+
+<style type="text/css" id="<?php echo self::OPTION_PAGE;?>-menu-css">
+#toplevel_page_<?php echo self::OPTION_PAGE;?> .wp-menu-image {
+	background: url( <?php echo plugins_url('images/menuicon-splite.png', dirname(__FILE__)); ?> ) 0 90% no-repeat !important;
+}
+#toplevel_page_<?php echo self::OPTION_PAGE;?>.current .wp-menu-image,
+#toplevel_page_<?php echo self::OPTION_PAGE;?>.wp-has-current-submenu .wp-menu-image,
+#toplevel_page_<?php echo self::OPTION_PAGE;?>:hover .wp-menu-image {
+	background-position: top left !important;
+}
+#icon-static-press {background-image: url(<?php echo plugins_url('images/rebuild32.png', dirname(__FILE__)); ?>);}
+#icon-static-press-options {background-image: url(<?php echo plugins_url('images/options32.png', dirname(__FILE__)); ?>);}
+</style>
+<?php
 	}
 
 	public function options_page(){
@@ -101,8 +144,8 @@ class static_press_admin {
 		if ( $this->basic_auth )
 			list($basic_usr,$basic_pwd) = explode(':', base64_decode($this->basic_auth));
 ?>
-		<div class="wrap" id="static-static-options">
-		<?php screen_icon(); ?>
+		<div class="wrap" id="<?php echo self::OPTION_PAGE; ?>-options">
+		<?php screen_icon(self::OPTION_PAGE.'-options'); ?>
 		<h2><?php echo esc_html( $title ); ?></h2>
 		<form method="post" action="<?php echo $this->admin_action;?>">
 		<?php echo wp_nonce_field($nonce_action, $nonce_name, true, false) . "\n"; ?>
@@ -116,8 +159,6 @@ class static_press_admin {
 		</form>
 		</div>
 <?php
-
-		$this->static_static_page();
 	}
 
 	private function input_field($field, $label, $val, $type = 'text'){
@@ -126,13 +167,13 @@ class static_press_admin {
 		echo "<tr>\n{$label}{$input_field}</tr>\n";
 	}
 
-	private function static_static_page(){
-		$title = __('StaticPress', self::TEXT_DOMAIN);
+	public function static_static_page(){
+		$title = __('Rebuild', self::TEXT_DOMAIN);
 ?>
-		<div class="wrap" style="margin=top:2em;" id="static-static-rebuild">
+		<div class="wrap" style="margin=top:2em;" id="<?php echo self::OPTION_PAGE; ?>">
 		<?php screen_icon(); ?>
 		<h2><?php echo esc_html( $title ); ?></h2>
-		<?php submit_button(__('Rebuild',   self::TEXT_DOMAIN), 'primary', 'rebuild'); ?>
+		<?php submit_button(__('Rebuild', self::TEXT_DOMAIN), 'primary', 'rebuild'); ?>
 		<div id="rebuild-result"></div>
 		</div>
 <?php
@@ -151,7 +192,7 @@ jQuery(function($){
 
 	function static_static_init(){
 		file_count = 0;
-		$('#static-static-options, #rebuild').hide();
+		$('#rebuild').hide();
 		$('#rebuild-result')
 			.html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>')
 			.after(loader);
@@ -174,7 +215,7 @@ jQuery(function($){
 				static_static_fetch();
 			},
 			error: function(){
-				$('#static-static-options, #rebuild').show();
+				$('#rebuild').show();
 				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
@@ -211,7 +252,7 @@ jQuery(function($){
 				}
 			},
 			error: function(){
-				$('#static-static-options, #rebuild').show();
+				$('#rebuild').show();
 				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
@@ -228,14 +269,14 @@ jQuery(function($){
 			type: 'POST',
 			success: function(response){
 				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
-				$('#static-static-options, #rebuild').show();
+				$('#rebuild').show();
 				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			},
 			error: function(){
-				$('#static-static-options, #rebuild').show();
+				$('#rebuild').show();
 				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
