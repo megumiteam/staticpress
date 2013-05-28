@@ -5,6 +5,7 @@ class static_press {
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
 
 	private $plugin_basename;
+	private $plugin_name;
 	private $plugin_version;
 
 	private $static_url;
@@ -27,16 +28,16 @@ class static_press {
 		$this->url_table = $wpdb->prefix.'urls';
 		$this->init_params($static_url, $static_dir, $remote_get_option);
 
-		add_filter('static_static::get_url', array(&$this, 'replace_url'));
-		add_filter('static_static::static_url', array(&$this, 'static_url'));
-		add_filter('static_static::put_content', array(&$this, 'rewrite_generator_tag'));
-		add_filter('static_static::put_content', array(&$this, 'add_last_modified'));
-		add_filter('static_static::put_content', array(&$this, 'remove_link_tag'));
-		add_filter('static_static::put_content', array(&$this, 'replace_relative_URI'));
+		add_filter('StaticPress::get_url', array(&$this, 'replace_url'));
+		add_filter('StaticPress::static_url', array(&$this, 'static_url'));
+		add_filter('StaticPress::put_content', array(&$this, 'rewrite_generator_tag'));
+		add_filter('StaticPress::put_content', array(&$this, 'add_last_modified'));
+		add_filter('StaticPress::put_content', array(&$this, 'remove_link_tag'));
+		add_filter('StaticPress::put_content', array(&$this, 'replace_relative_URI'));
 
-		add_action('wp_ajax_static_static_init', array(&$this, 'ajax_init'));
-		add_action('wp_ajax_static_static_fetch', array(&$this, 'ajax_fetch'));
-		add_action('wp_ajax_static_static_finalyze', array(&$this, 'ajax_finalyze'));
+		add_action('wp_ajax_static_press_init', array(&$this, 'ajax_init'));
+		add_action('wp_ajax_static_press_fetch', array(&$this, 'ajax_fetch'));
+		add_action('wp_ajax_static_press_finalyze', array(&$this, 'ajax_finalyze'));
 	}
 
 	private function init_params($static_url, $static_dir, $remote_get_option){
@@ -65,7 +66,11 @@ class static_press {
 
 		$this->remote_get_option = $remote_get_option;
 
-	    $data = get_file_data(dirname(dirname(__FILE__)).'/plugin.php', array('version' => 'Version'));
+	    $data = get_file_data(
+	    	dirname(dirname(__FILE__)).'/plugin.php',
+	    	array('pluginname' => 'Plugin Name', 'version' => 'Version')
+	    	);
+		$this->plugin_name    = isset($data['pluginname']) ? $data['pluginname'] : 'StaticPress';
 		$this->plugin_version = isset($data['version']) ? $data['version'] : '';
 
 		$this->create_table();
@@ -357,7 +362,7 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
-		$url = apply_filters('static_static::get_url', $url);
+		$url = apply_filters('StaticPress::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
 
 		$http_code = 200;
@@ -376,7 +381,7 @@ CREATE TABLE `{$this->url_table}` (
 						$this->other_url($content['body'], $url);
 				case 404:
 					if ($create_404 || $http_code == 200) {
-						$content = apply_filters('static_static::put_content', $content['body']);
+						$content = apply_filters('StaticPress::put_content', $content['body']);
 						$this->make_subdirectories($file_dest);
 						file_put_contents($file_dest, $content);
 						$file_date = date('Y-m-d h:i:s', filemtime($file_dest));
@@ -454,7 +459,7 @@ CREATE TABLE `{$this->url_table}` (
 	public function	rewrite_generator_tag($content) {
 		$content = preg_replace(
 			'#^([ \t]*<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/>\n)#ism',
-			'$1$2 with Static Static'.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
+			'$1$2 with '.$this->plugin_name.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
 			$content);
 		return $content;
 	}
@@ -595,7 +600,8 @@ CREATE TABLE `{$this->url_table}` (
 	private function get_urls(){
 		global $wpdb;
 
-		$wpdb->query("delete from `{$this->url_table}` where `last_statuscode` != 200");
+//		$wpdb->query("delete from `{$this->url_table}` where `last_statuscode` != 200");
+		$wpdb->query("truncate table `{$this->url_table}`");
 		$this->post_types = "'".implode("','",get_post_types(array('public' => true)))."'";
 		$urls = array();
 		$urls = array_merge($urls, $this->front_page_url());
@@ -611,7 +617,7 @@ CREATE TABLE `{$this->url_table}` (
 		$site_url = $this->get_site_url();
 		$urls[] = array(
 			'type' => $url_type,
-			'url' => apply_filters('static_static::get_url', $site_url),
+			'url' => apply_filters('StaticPress::get_url', $site_url),
 			'last_modified' => date('Y-m-d h:i:s'),
 			);
 		return $urls;
@@ -642,7 +648,7 @@ select ID, post_type, post_content, post_status, post_modified
 				$count = count($splite);
 			$urls[] = array(
 				'type' => $url_type,
-				'url' => apply_filters('static_static::get_url', $permalink),
+				'url' => apply_filters('StaticPress::get_url', $permalink),
 				'object_id' => intval($post_id),
 				'object_type' =>  $post->post_type,
 				'pages' => $count,
@@ -697,7 +703,7 @@ select MAX(P.post_modified) as last_modified, count(P.ID) as count
 				list($modified, $page_count) = $this->get_term_info($term_id);
 				$urls[] = array(
 					'type' => $url_type,
-					'url' => apply_filters('static_static::get_url', $termlink),
+					'url' => apply_filters('StaticPress::get_url', $termlink),
 					'object_id' => intval($term_id),
 					'object_type' => $term->taxonomy,
 					'parent' => $term->parent,
@@ -719,7 +725,7 @@ select MAX(P.post_modified) as last_modified, count(P.ID) as count
 					list($modified, $page_count) = $this->get_term_info($term_id);
 					$urls[] = array(
 						'type' => $url_type,
-						'url' => apply_filters('static_static::get_url', $termlink),
+						'url' => apply_filters('StaticPress::get_url', $termlink),
 						'object_id' => intval($term_id),
 						'object_type' => $term->taxonomy,
 						'parent' => $term->parent,
@@ -760,7 +766,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 				continue;
 			$urls[] = array(
 				'type' => $url_type,
-				'url' => apply_filters('static_static::get_url', $authorlink),
+				'url' => apply_filters('StaticPress::get_url', $authorlink),
 				'object_id' => intval($author_id),
 				'pages' => $page_count,
 				'last_modified' => $modified,
@@ -785,7 +791,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		foreach ($static_files as $static_file){
 			$urls[] = array(
 				'type' => $url_type,
-				'url' => apply_filters('static_static::get_url', str_replace(trailingslashit(ABSPATH), trailingslashit($this->get_site_url()), $static_file)),
+				'url' => apply_filters('StaticPress::get_url', str_replace(trailingslashit(ABSPATH), trailingslashit($this->get_site_url()), $static_file)),
 				'last_modified' => date('Y-m-d h:i:s', filemtime($static_file)),
 				);
 		}
@@ -795,8 +801,8 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 	private function url_exists($link) {
 		global $wpdb;
 
-		$link = apply_filters('static_static::get_url', $link);
-		$count = intval(wp_cache_get('static_static::'.$link, 'static_static'));
+		$link = apply_filters('StaticPress::get_url', $link);
+		$count = intval(wp_cache_get('StaticPress::'.$link, 'static_press'));
 		if ($count > 0)
 			return true;
 
@@ -805,7 +811,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 			$link
 			);
 		$count = intval($wpdb->get_var($sql));
-		wp_cache_set('static_static::'.$link, $count, 'static_static');
+		wp_cache_set('StaticPress::'.$link, $count, 'static_press');
 		
 		return $count > 0;
 	}
@@ -816,7 +822,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		while (($url = dirname($url)) && $url != '/') {
 			if (!$this->url_exists($url)) {
 				$urls[] = array(
-					'url' => apply_filters('static_static::get_url', $url),
+					'url' => apply_filters('StaticPress::get_url', $url),
 					'last_modified' => date('Y-m-d h:i:s'),
 					);
 			}
@@ -828,7 +834,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 			foreach ($matches as $link) {
 				if (!$this->url_exists($link)) {
 					$urls[] = array(
-						'url' => apply_filters('static_static::get_url', $link),
+						'url' => apply_filters('StaticPress::get_url', $link),
 						'last_modified' => date('Y-m-d h:i:s'),
 						);
 				}

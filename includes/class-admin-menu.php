@@ -63,7 +63,7 @@ class static_press_admin {
 			__('StaticPress', self::TEXT_DOMAIN) ,
 			self::ACCESS_LEVEL,
 			self::OPTION_PAGE ,
-			array($this, 'static_static_page') ,
+			array($this, 'static_press_page') ,
 			plugins_url('images/staticpress.png')
 			);
 		add_action('admin_print_scripts-'.$hook, array($this, 'add_admin_scripts'));
@@ -167,7 +167,7 @@ class static_press_admin {
 		echo "<tr>\n{$label}{$input_field}</tr>\n";
 	}
 
-	public function static_static_page(){
+	public function static_press_page(){
 		$title = __('Rebuild', self::TEXT_DOMAIN);
 ?>
 		<div class="wrap" style="margin=top:2em;" id="<?php echo self::OPTION_PAGE; ?>">
@@ -190,43 +190,43 @@ jQuery(function($){
 	var file_count = 0;
 	var loader = $('<div id="loader" style="line-height: 115px; text-align: center;"><img alt="activity indicator" src="<?php echo plugins_url( 'images/ajax-loader.gif' , dirname(__FILE__) ); ?>"></div>');
 
-	function static_static_init(){
+	function static_press_init(){
 		file_count = 0;
 		$('#rebuild').hide();
 		$('#rebuild-result')
-			.html('<p><strong><?php echo __('Initialyze...',   self::TEXT_DOMAIN);?></strong></p>')
+			.html('<p><strong><?php echo __('Initialyze...', self::TEXT_DOMAIN);?></strong></p>')
 			.after(loader);
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_static_init'},
+			data: {action: 'static_press_init'},
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
 			success: function(response){
 				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
 				if (response.result) {
-					$('#rebuild-result').append('<p><strong><?php echo __('URLS',   self::TEXT_DOMAIN);?></strong></p>')
+					$('#rebuild-result').append('<p><strong><?php echo __('URLS', self::TEXT_DOMAIN);?></strong></p>')
 					var ul = $('<ul></ul>');
 					$.each(response.urls_count, function(){
 						ul.append('<li>' + this.type + ' (' + this.count + ')</li>');
 					});
 					$('#rebuild-result').append('<p></p>').append(ul);
 				}
-				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...',   self::TEXT_DOMAIN);?></strong></p>');				
-				static_static_fetch();
+				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...', self::TEXT_DOMAIN);?></strong></p>');				
+				static_press_fetch();
 			},
 			error: function(){
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
 		});
 	}
 
-	function static_static_fetch(){
+	function static_press_fetch(){
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_static_fetch'},
+			data: {action: 'static_press_fetch'},
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
@@ -244,26 +244,26 @@ jQuery(function($){
 					});
 					$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
 					if (response.final)
-						static_static_finalyze();
+						static_press_finalyze();
 					else
-						static_static_fetch();
+						static_press_fetch();
 				} else {
-					static_static_finalyze();
+					static_press_finalyze();
 				}
 			},
 			error: function(){
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
 		});
 	}
 
-	function static_static_finalyze(){
+	function static_press_finalyze(){
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_static_finalyze'},
+			data: {action: 'static_press_finalyze'},
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
@@ -285,7 +285,7 @@ jQuery(function($){
 		});
 	}
 
-	$('#rebuild').click(static_static_init);
+	$('#rebuild').click(static_press_init);
 });
 </script>
 <?php
