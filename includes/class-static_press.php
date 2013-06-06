@@ -502,7 +502,7 @@ CREATE TABLE `{$this->url_table}` (
 				$url['enable'] = 0;
 			} else if (preg_match('#\?[^=]+[=]?#i', $url['url'])) {
 				$url['enable'] = 0;
-			} else if (preg_match('#/wp_admin/$#i', $url['url'])) {
+			} else if (preg_match('#/wp-admin/$#i', $url['url'])) {
 				$url['enable'] = 0;
 			} else if ($url['type'] == 'static_file') {
 				$plugin_dir  = trailingslashit(str_replace(ABSPATH, '/', WP_PLUGIN_DIR));
