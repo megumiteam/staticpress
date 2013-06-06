@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJ
 Tags: static
 Requires at least: 3.5
 Tested up to: 3.5.1
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 
 Transform your WordPress into static websites and blogs.
 

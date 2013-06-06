@@ -12,6 +12,9 @@ class static_press_admin {
 	const ACCESS_LEVEL = 'manage_options';
 
 	private $plugin_basename;
+	private $plugin_name;
+	private $plugin_version;
+
 	private $static_url;
 	private $static_dir;
 	private $basic_auth;
@@ -23,6 +26,13 @@ class static_press_admin {
 		$this->basic_auth = get_option(self::OPTION_STATIC_BASIC, false);
 		$this->plugin_basename = $plugin_basename;
 		$this->admin_action = admin_url('/admin.php') . '?page=' . self::OPTION_PAGE . '-options';
+
+	    $data = get_file_data(
+	    	dirname(dirname(__FILE__)).'/plugin.php',
+	    	array('pluginname' => 'Plugin Name', 'version' => 'Version')
+	    	);
+		$this->plugin_name    = isset($data['pluginname']) ? $data['pluginname'] : 'StaticPress';
+		$this->plugin_version = isset($data['version']) ? $data['version'] : '';
 
 		add_action('admin_menu', array(&$this, 'admin_menu'));
 		add_filter('plugin_action_links', array(&$this, 'plugin_setting_links'), 10, 2 );
@@ -59,8 +69,8 @@ class static_press_admin {
 	//**************************************************************************************
 	public function admin_menu() {
 		$hook = add_menu_page(
-			__('StaticPress', self::TEXT_DOMAIN) ,
-			__('StaticPress', self::TEXT_DOMAIN) ,
+			__($this->plugin_name, self::TEXT_DOMAIN) ,
+			__($this->plugin_name, self::TEXT_DOMAIN) ,
 			self::ACCESS_LEVEL,
 			self::OPTION_PAGE ,
 			array($this, 'static_press_page') ,
@@ -70,8 +80,8 @@ class static_press_admin {
 
 		$hook = add_submenu_page(
 			self::OPTION_PAGE ,
-			__('StaticPress Options', self::TEXT_DOMAIN) ,
-			__('StaticPress Options', self::TEXT_DOMAIN) ,
+			__($this->plugin_name.' Options', self::TEXT_DOMAIN) ,
+			__($this->plugin_name.' Options', self::TEXT_DOMAIN) ,
 			self::ACCESS_LEVEL,
 			self::OPTION_PAGE . '-options' ,
 			array($this, 'options_page'),
@@ -105,7 +115,7 @@ class static_press_admin {
 		$nonce_action  = 'update_options';
 		$nonce_name    = '_wpnonce_update_options';
 
-		$title = __('StaticPress Options', self::TEXT_DOMAIN);
+		$title = __($this->plugin_name.' Options', self::TEXT_DOMAIN);
 
 		$iv = new InputValidator('POST');
 		$iv->set_rules($nonce_name, 'required');

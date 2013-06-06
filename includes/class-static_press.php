@@ -206,21 +206,6 @@ CREATE TABLE `{$this->url_table}` (
 					'static' => $static_file,
 					);
 			}
-//		} else if ($url->type == 'front_page') {
-//			$page = 2;
-//			$page_url = sprintf('%s/page/%d', untrailingslashit(trim($url->url)), $page);
-//			while($static_file = $this->create_static_file($page_url, 'other_page', false, true)){
-//				$file_count++;
-//				$result["{$url->ID}-{$page}"] = array(
-//					'ID' => $url->ID,
-//					'page' => $page,
-//					'type' => $url->type,
-//					'url' => $page_url,
-//					'static' => $static_file,
-//					);
-//				$page++;
-//				$page_url = sprintf('%s/page/%d', untrailingslashit($url->url), $page);
-//			}
 		}
 
 		while ($url = $this->fetch_url()) {
@@ -516,6 +501,8 @@ CREATE TABLE `{$this->url_table}` (
 			if (preg_match('#\.php$#i', $url['url'])) {
 				$url['enable'] = 0;
 			} else if (preg_match('#\?[^=]+[=]?#i', $url['url'])) {
+				$url['enable'] = 0;
+			} else if (preg_match('#/wp_admin/$#i', $url['url'])) {
 				$url['enable'] = 0;
 			} else if ($url['type'] == 'static_file') {
 				$plugin_dir  = trailingslashit(str_replace(ABSPATH, '/', WP_PLUGIN_DIR));
