@@ -4,7 +4,7 @@ Plugin Name: StaticPress
 Author: wokamoto 
 Plugin URI: https://github.com/megumiteam/staticpress
 Description: Transform your WordPress into static websites and blogs.
-Version: 0.4.2
+Version: 0.4.2.1
 Author URI: http://www.digitalcube.jp/
 Text Domain: static-press
 Domain Path: /languages
@@ -30,7 +30,7 @@ License:
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 if (!class_exists('static_press_admin'))
-	require(dirname(__FILE__).'/includes/cclass-static_press_admin.php');
+	require(dirname(__FILE__).'/includes/class-static_press_admin.php');
 if (!class_exists('static_press'))
 	require(dirname(__FILE__).'/includes/class-static_press.php');
 
