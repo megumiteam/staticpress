@@ -4,7 +4,7 @@ Plugin Name: StaticPress
 Author: wokamoto 
 Plugin URI: https://github.com/megumiteam/staticpress
 Description: Transform your WordPress into static websites and blogs.
-Version: 0.4.1
+Version: 0.4.2
 Author URI: http://www.digitalcube.jp/
 Text Domain: static-press
 Domain Path: /languages
@@ -30,18 +30,20 @@ License:
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 if (!class_exists('static_press_admin'))
-	require_once(dirname(__FILE__).'/includes/class-admin-menu.php');
+	require(dirname(__FILE__).'/includes/cclass-static_press_admin.php');
 if (!class_exists('static_press'))
-	require_once(dirname(__FILE__).'/includes/class-static_press.php');
+	require(dirname(__FILE__).'/includes/class-static_press.php');
 
 load_plugin_textdomain(static_press_admin::TEXT_DOMAIN, false, dirname(plugin_basename(__FILE__)) . '/languages/');
 
-$static_admin = new static_press_admin(plugin_basename(__FILE__));
-$static = new static_press(
+$static_press = new static_press(
 	plugin_basename(__FILE__),
-	$static_admin->static_url(),
-	$static_admin->static_dir(),
-	$static_admin->remote_get_option()
+	static_press_admin::static_url(),
+	static_press_admin::static_dir(),
+	static_press_admin::remote_get_option()
 	);
-register_activation_hook(__FILE__, array($static, 'activate'));
-register_deactivation_hook(__FILE__, array($static, 'deactivate'));
+register_activation_hook(__FILE__, array($static_press, 'activate'));
+register_deactivation_hook(__FILE__, array($static_press, 'deactivate'));
+
+if (is_admin())
+	new static_press_admin(plugin_basename(__FILE__));

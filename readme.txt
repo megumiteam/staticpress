@@ -30,9 +30,16 @@ none
 
 == Screenshots ==
 
-1. The admin page
+1. Sidebar menu
+
+2. The admin page
+
+3. Rebuild!
 
 == Changelog == 
 
-**0.3.3 - May 14, 2013**  
+**0.4.1 - June 7, 2013**
+source code refactoring
+
+**0.4.0 - May 14, 2013**  
 Initial release.

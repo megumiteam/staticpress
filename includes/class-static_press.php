@@ -22,10 +22,8 @@ class static_press {
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
-		global $wpdb;
-
 		$this->plugin_basename = $plugin_basename;
-		$this->url_table = $wpdb->prefix.'urls';
+		$this->url_table = self::url_table();
 		$this->init_params($static_url, $static_dir, $remote_get_option);
 
 		add_filter('StaticPress::get_url', array(&$this, 'replace_url'));
@@ -38,6 +36,11 @@ class static_press {
 		add_action('wp_ajax_static_press_init', array(&$this, 'ajax_init'));
 		add_action('wp_ajax_static_press_fetch', array(&$this, 'ajax_fetch'));
 		add_action('wp_ajax_static_press_finalyze', array(&$this, 'ajax_finalyze'));
+	}
+
+	static public function url_table(){
+		global $wpdb;
+		return $wpdb->prefix.'urls';
 	}
 
 	private function init_params($static_url, $static_dir, $remote_get_option){
@@ -587,7 +590,6 @@ CREATE TABLE `{$this->url_table}` (
 	private function get_urls(){
 		global $wpdb;
 
-//		$wpdb->query("delete from `{$this->url_table}` where `last_statuscode` != 200");
 		$wpdb->query("truncate table `{$this->url_table}`");
 		$this->post_types = "'".implode("','",get_post_types(array('public' => true)))."'";
 		$urls = array();

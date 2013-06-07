@@ -1,6 +1,8 @@
 <?php
 if ( !class_exists('InputValidator') ) :
-require_once(dirname(__FILE__).'/class-WP_Function_Wrapper.php');
+
+if ( !class_exists('WP_Function_Wrapper'))
+	require(dirname(__FILE__).'/class-WP_Function_Wrapper.php');
 
 class InputValidator {
 	const PASSWORD_MIN_LENGTH = 6;
