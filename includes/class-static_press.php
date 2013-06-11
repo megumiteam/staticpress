@@ -28,10 +28,10 @@ class static_press {
 
 		add_filter('StaticPress::get_url', array(&$this, 'replace_url'));
 		add_filter('StaticPress::static_url', array(&$this, 'static_url'));
-		add_filter('StaticPress::put_content', array(&$this, 'rewrite_generator_tag'));
-		add_filter('StaticPress::put_content', array(&$this, 'add_last_modified'));
-		add_filter('StaticPress::put_content', array(&$this, 'remove_link_tag'));
-		add_filter('StaticPress::put_content', array(&$this, 'replace_relative_URI'));
+		add_filter('StaticPress::put_content', array(&$this, 'rewrite_generator_tag'), 10, 2);
+		add_filter('StaticPress::put_content', array(&$this, 'add_last_modified'), 10, 2);
+		add_filter('StaticPress::put_content', array(&$this, 'remove_link_tag'), 10, 2);
+		add_filter('StaticPress::put_content', array(&$this, 'replace_relative_URI'), 10, 2);
 
 		add_action('wp_ajax_static_press_init', array(&$this, 'ajax_init'));
 		add_action('wp_ajax_static_press_fetch', array(&$this, 'ajax_fetch'));
@@ -236,6 +236,7 @@ CREATE TABLE `{$this->url_table}` (
 		if (!is_user_logged_in())
 			wp_die('Forbidden');
 
+		$static_file = $this->create_static_file($this->get_site_url().'404.html');
 		$this->fetch_finalyze();
 
 		$this->json_output(array('result' => true));
@@ -366,10 +367,10 @@ CREATE TABLE `{$this->url_table}` (
 				switch (intval($http_code)) {
 				case 200:
 					if ($crawling)
-						$this->other_url($content['body'], $url);
+						$this->other_url($content['body'], $url, $http_code);
 				case 404:
 					if ($create_404 || $http_code == 200) {
-						$content = apply_filters('StaticPress::put_content', $content['body']);
+						$content = apply_filters('StaticPress::put_content', $content['body'], $http_code);
 						$this->make_subdirectories($file_dest);
 						file_put_contents($file_dest, $content);
 						$file_date = date('Y-m-d h:i:s', filemtime($file_dest));
@@ -421,38 +422,50 @@ CREATE TABLE `{$this->url_table}` (
 		$response = wp_remote_get($url, $this->remote_get_option);
 		if (is_wp_error($response))
 			return false;
-		return array('code' => $response["response"]["code"], 'body' => $this->remove_link_tag($response["body"]));
+		return array(
+			'code' => $response["response"]["code"],
+			'body' => $this->remove_link_tag($response["body"], intval($response["response"]["code"])),
+			);
 	}
 
-	public function remove_link_tag($content) {
+	public function remove_link_tag($content, $http_code = 200) {
 		$content = preg_replace(
-			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI|shortlink|wlwmanifest)[\'"][^>]+/>\n#ism',
+			'#^[ \t]*<link [^>]*rel=[\'"](pingback|EditURI|shortlink|wlwmanifest)[\'"][^>]+/?>\n#ism',
 			'',
 			$content);
 		$content = preg_replace(
-			'#^[ \t]*<link [^>]*rel=[\'"]alternate[\'"] [^>]*type=[\'"]application/rss\+xml[\'"][^>]+/>\n#ism',
+			'#^[ \t]*<link [^>]*rel=[\'"]alternate[\'"] [^>]*type=[\'"]application/rss\+xml[\'"][^>]+/?>\n#ism',
 			'',
 			$content);
 		return $content;
 	}
 
-	public function	add_last_modified($content) {
-		$last_modified = sprintf(
-			'<meta http-equiv="Last-Modified" content="%s GMT" />',
-			gmdate("D, d M Y H:i:s"));
-		$content = preg_replace('#(<head>|<head [^>]+>)#ism', '$1'."\n".$last_modified, $content);
+	public function	add_last_modified($content, $http_code = 200) {
+		if (intval($http_code) === 200) {
+			$type = preg_match('#<!DOCTYPE html>#i', $content) ? 'html' : 'xhtml';
+			switch ( $type ) {
+			case 'html':
+				$last_modified = sprintf('<meta http-equiv="Last-Modified" content="%s GMT">', gmdate("D, d M Y H:i:s"));
+				break;
+			case 'xhtml':
+			default:
+				$last_modified = sprintf('<meta http-equiv="Last-Modified" content="%s GMT" />', gmdate("D, d M Y H:i:s"));
+				break;
+			}
+			$content = preg_replace('#(<head>|<head [^>]+>)#ism', '$1'."\n".$last_modified, $content);
+		}
 		return $content;
 	}
 
-	public function	rewrite_generator_tag($content) {
+	public function	rewrite_generator_tag($content, $http_code = 200) {
 		$content = preg_replace(
-			'#^([ \t]*<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/>\n)#ism',
+			'#(<meta [^>]*name=[\'"]generator[\'"] [^>]*content=[\'"])([^\'"]*)([\'"][^>]*/?>)#ism',
 			'$1$2 with '.$this->plugin_name.(!empty($this->plugin_version) ? ' ver.'.$this->plugin_version : '').'$3',
 			$content);
 		return $content;
 	}
 
-	public function replace_relative_URI($content) {
+	public function replace_relative_URI($content, $http_code = 200) {
 		$site_url = trailingslashit($this->get_site_url());
 		$parsed = parse_url($site_url);
 		$home_url = $parsed['scheme'] . '://' . $parsed['host'];
