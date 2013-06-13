@@ -17,7 +17,7 @@ class static_press {
 
 	private $transient_key = 'static static';
 
-	private $static_files = array(
+	private $static_files_ext = array(
 		'html','htm','txt','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
 		);
 
@@ -25,13 +25,6 @@ class static_press {
 		$this->plugin_basename = $plugin_basename;
 		$this->url_table = self::url_table();
 		$this->init_params($static_url, $static_dir, $remote_get_option);
-
-		add_filter('StaticPress::get_url', array(&$this, 'replace_url'));
-		add_filter('StaticPress::static_url', array(&$this, 'static_url'));
-		add_filter('StaticPress::put_content', array(&$this, 'rewrite_generator_tag'), 10, 2);
-		add_filter('StaticPress::put_content', array(&$this, 'add_last_modified'), 10, 2);
-		add_filter('StaticPress::put_content', array(&$this, 'remove_link_tag'), 10, 2);
-		add_filter('StaticPress::put_content', array(&$this, 'replace_relative_URI'), 10, 2);
 
 		add_action('wp_ajax_static_press_init', array(&$this, 'ajax_init'));
 		add_action('wp_ajax_static_press_fetch', array(&$this, 'ajax_fetch'));
@@ -245,8 +238,10 @@ CREATE TABLE `{$this->url_table}` (
 	public function replace_url($url){
 		$site_url = trailingslashit($this->get_site_url());
 		$url = trim(str_replace($site_url, '/', $url));
-		if (!preg_match('#[^/]+\.' . implode('|', array_merge($this->static_files, array('php'))) . '$#i', $url))
+		$static_files_filter = apply_filters('StaticPress::static_files_filter', $this->static_files_ext);
+		if (!preg_match('#[^/]+\.' . implode('|', array_merge($static_files_filter, array('php'))) . '$#i', $url))
 			$url = trailingslashit($url);
+		unset($static_files_filter);
 		return $url;
 	}
 
@@ -339,8 +334,9 @@ CREATE TABLE `{$this->url_table}` (
 
 	// make subdirectries
 	private function make_subdirectories($file){
-		$subdir = '/';
-		$directories = explode('/',dirname($file));
+		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
+		$subdir = $dir_sep;
+		$directories = explode($dir_sep, dirname($file));
 		foreach ($directories as $dir){
 			if (empty($dir))
 				continue;
@@ -353,6 +349,9 @@ CREATE TABLE `{$this->url_table}` (
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
 		$url = apply_filters('StaticPress::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
+		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
+		if ( $dir_sep !== '/' )
+			$file_dest = str_replace('/', $dir_sep, $file_dest);
 
 		$http_code = 200;
 		switch ($file_type) {
@@ -381,7 +380,9 @@ CREATE TABLE `{$this->url_table}` (
 		case 'static_file':
 			// get static file
 			$file_source = untrailingslashit(ABSPATH) . $url;
-			if (!file_exists($file_source)) {
+			if ( $dir_sep !== '/' )
+				$file_source = str_replace('/', $dir_sep, $file_source);
+			if (!is_file($file_source) || !file_exists($file_source)) {
 				$this->delete_url(array($url));
 				return false;
 			}
@@ -392,6 +393,7 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			break;
 		}
+		do_action('StaticPress::file_put', $file_dest, $file_type, $file_date, $url);
 
 		if (file_exists($file_dest)) {
 			$this->update_url(array(array(
@@ -565,7 +567,7 @@ CREATE TABLE `{$this->url_table}` (
 				$sql = "update {$this->url_table}";
 				$update_sql = array();
 				foreach($url as $key => $val){
-					$update_sql[] = $wpdb->prepare("$key = %s", $val);
+					$update_sql[] = $wpdb->prepare("{$key} = %s", $val);
 				}
 				$sql .= ' set '.implode(',', $update_sql);
 				$sql .= $wpdb->prepare(' where ID=%s', $id);
@@ -581,6 +583,8 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			if ($sql)
 				$wpdb->query($sql);
+
+			do_action('StaticPress::update_url', $url);
 		}
 		return $urls;
 	}
@@ -596,6 +600,7 @@ CREATE TABLE `{$this->url_table}` (
 				$url['url']);
 			if ($sql)
 				$wpdb->query($sql);
+			do_action('StaticPress::delete_url', $url);
 		}
 		return $urls;
 	}
@@ -780,20 +785,23 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 	private function static_files_url($url_type = 'static_file'){
 		$urls = array();
 
-		$static_files = $this->static_files;
-		foreach ($static_files as &$static_file) {
-			$static_file = "*.{$static_file}";
+		$static_files_filter = apply_filters('StaticPress::static_files_filter', $this->static_files_ext);
+		foreach ($static_files_filter as &$file_ext) {
+			$file_ext = '*.'.$file_ext;
 		}
 		$static_files = array_merge(
-			$this->scan_file(trailingslashit(ABSPATH), '{'.implode(',',$static_files).'}', false),
-			$this->scan_file(trailingslashit(ABSPATH).'wp-admin/', '{'.implode(',',$static_files).'}', true),
-			$this->scan_file(trailingslashit(ABSPATH).'wp-includes/', '{'.implode(',',$static_files).'}', true),
-			$this->scan_file(trailingslashit(WP_CONTENT_DIR), '{'.implode(',',$static_files).'}', true)
+			$this->scan_file(trailingslashit(ABSPATH), '{'.implode(',',$static_files_filter).'}', false),
+			$this->scan_file(trailingslashit(ABSPATH).'wp-admin/', '{'.implode(',',$static_files_filter).'}', true),
+			$this->scan_file(trailingslashit(ABSPATH).'wp-includes/', '{'.implode(',',$static_files_filter).'}', true),
+			$this->scan_file(trailingslashit(WP_CONTENT_DIR), '{'.implode(',',$static_files_filter).'}', true)
 			);
+		unset($static_files_filter);
+
 		foreach ($static_files as $static_file){
+			$static_file_url = str_replace(trailingslashit(ABSPATH), trailingslashit($this->get_site_url()), $static_file);
 			$urls[] = array(
 				'type' => $url_type,
-				'url' => apply_filters('StaticPress::get_url', str_replace(trailingslashit(ABSPATH), trailingslashit($this->get_site_url()), $static_file)),
+				'url' => apply_filters('StaticPress::get_url', $static_file_url),
 				'last_modified' => date('Y-m-d h:i:s', filemtime($static_file)),
 				);
 		}
@@ -850,7 +858,16 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		return $urls;
 	}
 
-	private function scan_file($dir, $target = '{*.html,*.htm,*.css,*.js,*.gif,*.png,*.jpg,*.jpeg,*.zip,*.ico,*.ttf,*.woff,*.otf,*.eot,*.svg,*.svgz,*.xml}', $recursive = true) {
+	private function scan_file($dir, $target = false, $recursive = true) {
+		if (!$target) {
+			$static_files_filter = apply_filters('StaticPress::static_files_filter', $this->static_files_ext);
+			foreach ($static_files_filter as &$file_ext) {
+				$file_ext = '*.'.$file_ext;
+			}
+			$target = '{'.implode(',',$static_files_filter).'}';
+			unset($static_files_filter);
+		}
+
 		$list = $tmp = array();
 		if ($recursive) {
 			foreach(glob($dir . '*/', GLOB_ONLYDIR) as $child_dir) {

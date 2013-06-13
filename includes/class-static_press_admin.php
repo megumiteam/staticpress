@@ -92,9 +92,12 @@ class static_press_admin {
 			array($this, 'options_page'),
 			plugins_url('images/staticpress_options.png', dirname(__FILE__))
 			);
+		
+		do_action('StaticPress::admin_menu', self::OPTION_PAGE);
 	}
 
 	public function add_admin_scripts(){
+		do_action('StaticPress::admin_scripts');
 	}
 
 	public function add_admin_head(){
@@ -114,6 +117,8 @@ class static_press_admin {
 #icon-static-press-options {background-image: url(<?php echo plugins_url('images/options32.png', dirname(__FILE__)); ?>);}
 </style>
 <?php
+
+		do_action('StaticPress::admin_head');
 	}
 
 	public function options_page(){
@@ -153,6 +158,8 @@ class static_press_admin {
 			$this->static_url = $static_url;
 			$this->static_dir = $static_dir;
 			$this->basic_auth = $basic_auth;
+
+			do_action('StaticPress::options_save');
 		}
 
 		$basic_usr = $basic_pwd = '';
@@ -174,6 +181,8 @@ class static_press_admin {
 		</form>
 		</div>
 <?php
+
+		do_action('StaticPress::options_page');
 	}
 
 	private function input_field($field, $label, $val, $type = 'text'){
@@ -195,6 +204,8 @@ class static_press_admin {
 
 		wp_enqueue_script('jQuery', false, array(), false, true);
 		add_action('admin_footer', array(&$this, 'admin_footer'));
+
+		do_action('StaticPress::static_press_page');
 	}
 
 	public function admin_footer(){
@@ -304,6 +315,7 @@ jQuery(function($){
 });
 </script>
 <?php
+		do_action('StaticPress::admin_footer');
 	}
 
 	//**************************************************************************************
@@ -314,6 +326,7 @@ jQuery(function($){
 			$settings_link = '<a href="' . $this->admin_action . '">' . __('Settings') . '</a>';
 			array_unshift($links, $settings_link); // before other links
 		}
+		$links = apply_filters('StaticPress::plugin_setting_links', $links);
 
 		return $links;
 	}

@@ -42,6 +42,14 @@ $static_press = new static_press(
 	static_press_admin::static_dir(),
 	static_press_admin::remote_get_option()
 	);
+
+add_filter('StaticPress::get_url', array($static_press, 'replace_url'));
+add_filter('StaticPress::static_url', array($static_press, 'static_url'));
+add_filter('StaticPress::put_content', array($static_press, 'rewrite_generator_tag'), 10, 2);
+add_filter('StaticPress::put_content', array($static_press, 'add_last_modified'), 10, 2);
+add_filter('StaticPress::put_content', array($static_press, 'remove_link_tag'), 10, 2);
+add_filter('StaticPress::put_content', array($static_press, 'replace_relative_URI'), 10, 2);
+
 register_activation_hook(__FILE__, array($static_press, 'activate'));
 register_deactivation_hook(__FILE__, array($static_press, 'deactivate'));
 
