@@ -359,7 +359,6 @@ CREATE TABLE `{$this->url_table}` (
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
 		$url = apply_filters('StaticPress::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
-		$static_url = untrailingslashit($this->static_url). $this->static_url($url);
 		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
 		if ( $dir_sep !== '/' )
 			$file_dest = str_replace('/', $dir_sep, $file_dest);
@@ -404,7 +403,7 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			break;
 		}
-		do_action('StaticPress::file_put', $file_dest, $file_type, $file_date, $static_url);
+		do_action('StaticPress::file_put', $file_dest, untrailingslashit($this->static_url). $this->static_url($url));
 
 		if (file_exists($file_dest)) {
 			$this->update_url(array(array(
