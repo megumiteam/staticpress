@@ -38,9 +38,14 @@ none
 
 == Changelog == 
 
+**0.4.3.1 - June 15, 2013**
+
+some fix
+
 **0.4.3 - June 11, 2013**
 
-create 404.html
+create 404.html.
+added some filter (and action) hook.
 
 **0.4.2.1 - June 7, 2013**
 

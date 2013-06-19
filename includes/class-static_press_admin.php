@@ -159,8 +159,8 @@ class static_press_admin {
 			$this->static_dir = $static_dir;
 			$this->basic_auth = $basic_auth;
 
-			do_action('StaticPress::options_save');
 		}
+		do_action('StaticPress::options_save');
 
 		$basic_usr = $basic_pwd = '';
 		if ( $this->basic_auth )

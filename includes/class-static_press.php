@@ -18,7 +18,9 @@ class static_press {
 	private $transient_key = 'static static';
 
 	private $static_files_ext = array(
-		'html','htm','txt','css','js','gif','png','jpg','jpeg','mp3','ico','ttf','woff','otf','eot','svg','svgz','xml','gz','zip'
+		'html','htm','txt','css','js','gif','png','jpg','jpeg',
+		'mp3','ico','ttf','woff','otf','eot','svg','svgz','xml',
+		'gz','zip', 'pdf', 'swf',
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
@@ -147,11 +149,12 @@ CREATE TABLE `{$this->url_table}` (
 			$this->fetch_start_time()
 			);
 		$all_urls = $wpdb->get_results($sql);
-
-		$this->json_output(
+		$result =
 			!is_wp_error($all_urls)
 			? array('result' => true, 'urls_count' => $all_urls)
-			: array('result' => false));
+			: array('result' => false);
+
+		$this->json_output(apply_filters('StaticPress::ajax_init', $result));
 	}
 
 	public function ajax_fetch(){
@@ -162,8 +165,10 @@ CREATE TABLE `{$this->url_table}` (
 			define('WP_DEBUG_DISPLAY', false);
 
 		$url = $this->fetch_url();
-		if (!$url)
-			$this->json_output(array('result' => false, 'final' => true));
+		if (!$url) {
+			$result = array('result' => false, 'final' => true);
+			$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
+		}
 
 		$result = array();
 		$static_file = $this->create_static_file($url->url, $url->type, true, true);
@@ -219,7 +224,8 @@ CREATE TABLE `{$this->url_table}` (
 				break;
 		}
 
-		$this->json_output(array('result' => true, 'files' => $result, 'final' => ($url === false)));
+		$result = array('result' => true, 'files' => $result, 'final' => ($url === false));
+		$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
 	}
 
 	public function ajax_finalyze(){
@@ -232,7 +238,8 @@ CREATE TABLE `{$this->url_table}` (
 		$static_file = $this->create_static_file($this->get_site_url().'404.html');
 		$this->fetch_finalyze();
 
-		$this->json_output(array('result' => true));
+		$result = array('result' => true);
+		$this->json_output(apply_filters('StaticPress::ajax_finalyze', $result));
 	}
 
 	public function replace_url($url){
@@ -332,10 +339,13 @@ CREATE TABLE `{$this->url_table}` (
 		return $wpdb->get_results($sql);
 	}
 
+	private function dir_sep(){
+		return defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
+	}
+
 	// make subdirectries
 	private function make_subdirectories($file){
-		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
-		$subdir = $dir_sep;
+		$dir_sep = $subdir = $this->dir_sep();
 		$directories = explode($dir_sep, dirname($file));
 		foreach ($directories as $dir){
 			if (empty($dir))
@@ -349,6 +359,7 @@ CREATE TABLE `{$this->url_table}` (
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
 		$url = apply_filters('StaticPress::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
+		$static_url = untrailingslashit($this->static_url). $this->static_url($url);
 		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
 		if ( $dir_sep !== '/' )
 			$file_dest = str_replace('/', $dir_sep, $file_dest);
@@ -393,7 +404,7 @@ CREATE TABLE `{$this->url_table}` (
 			}
 			break;
 		}
-		do_action('StaticPress::file_put', $file_dest, $file_type, $file_date, $url);
+		do_action('StaticPress::file_put', $file_dest, $file_type, $file_date, $static_url);
 
 		if (file_exists($file_dest)) {
 			$this->update_url(array(array(
@@ -425,8 +436,8 @@ CREATE TABLE `{$this->url_table}` (
 		if (is_wp_error($response))
 			return false;
 		return array(
-			'code' => $response["response"]["code"],
-			'body' => $this->remove_link_tag($response["body"], intval($response["response"]["code"])),
+			'code' => $response['response']['code'],
+			'body' => $this->remove_link_tag($response['body'], intval($response['response']['code'])),
 			);
 	}
 
