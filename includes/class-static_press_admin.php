@@ -11,6 +11,8 @@ class static_press_admin {
 	const DEBUG_MODE  = false;
 	const ACCESS_LEVEL = 'manage_options';
 
+	static $instance;
+
 	private $plugin_basename;
 	private $plugin_name;
 	private $plugin_version;
@@ -21,6 +23,8 @@ class static_press_admin {
 	private $admin_action;
 
 	function __construct($plugin_basename){
+		self::$instance = $this;
+
 		$this->static_url = self::static_url();
 		$this->static_dir = self::static_dir();
 		$this->basic_auth = self::basic_auth();
@@ -34,8 +38,8 @@ class static_press_admin {
 		$this->plugin_name    = isset($data['pluginname']) ? $data['pluginname'] : 'StaticPress';
 		$this->plugin_version = isset($data['version']) ? $data['version'] : '';
 
-		add_action('admin_menu', array(&$this, 'admin_menu'));
-		add_filter('plugin_action_links', array(&$this, 'plugin_setting_links'), 10, 2 );
+		add_action('admin_menu', array($this, 'admin_menu'));
+		add_filter('plugin_action_links', array($this, 'plugin_setting_links'), 10, 2 );
 
 		add_action('admin_head', array($this,'add_admin_head'), 99);
 	}
@@ -203,7 +207,7 @@ class static_press_admin {
 <?php
 
 		wp_enqueue_script('jQuery', false, array(), false, true);
-		add_action('admin_footer', array(&$this, 'admin_footer'));
+		add_action('admin_footer', array($this, 'admin_footer'));
 
 		do_action('StaticPress::static_press_page');
 	}

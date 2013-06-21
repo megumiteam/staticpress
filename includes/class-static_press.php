@@ -4,6 +4,8 @@ class static_press {
 	const FETCH_LIMIT_STATIC = 100;
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
 
+	static $instance;
+
 	private $plugin_basename;
 	private $plugin_name;
 	private $plugin_version;
@@ -24,13 +26,15 @@ class static_press {
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
+		self::$instance = $this;
+
 		$this->plugin_basename = $plugin_basename;
 		$this->url_table = self::url_table();
 		$this->init_params($static_url, $static_dir, $remote_get_option);
 
-		add_action('wp_ajax_static_press_init', array(&$this, 'ajax_init'));
-		add_action('wp_ajax_static_press_fetch', array(&$this, 'ajax_fetch'));
-		add_action('wp_ajax_static_press_finalyze', array(&$this, 'ajax_finalyze'));
+		add_action('wp_ajax_static_press_init', array($this, 'ajax_init'));
+		add_action('wp_ajax_static_press_fetch', array($this, 'ajax_fetch'));
+		add_action('wp_ajax_static_press_finalyze', array($this, 'ajax_finalyze'));
 	}
 
 	static public function url_table(){
@@ -502,7 +506,22 @@ CREATE TABLE `{$this->url_table}` (
 		);
 		$content  = preg_replace($pattern, ' $1="$2"', $content);
 
-		$pattern  = '#<(meta [^>]*property=[\'"]og:[^\'"]*[\'"] [^>]*content=|link [^>]*rel=[\'"]canonical[\'"] [^>]*href=|link [^>]*rel=[\'"]shortlink[\'"] [^>]*href=|data-href=|data-url=)[\'"](/[^\'"]*)[\'"]([^>]*)>#uism';
+		if ( $home_url !== $static_url ) {
+			$pattern  = array(
+				'# (href|src|action)="'.preg_quote($home_url).'([^"]*)"#ism',
+				"# (href|src|action)='".preg_quote($home_url)."([^']*)'#ism",
+			);
+			$content  = preg_replace($pattern, ' $1="$2"', $content);
+		}
+
+		$pattern = array(
+			'meta [^>]*property=[\'"]og:[^\'"]*[\'"] [^>]*content=',
+			'link [^>]*rel=[\'"]canonical[\'"] [^>]*href=',
+			'link [^>]*rel=[\'"]shortlink[\'"] [^>]*href=',
+			'data-href=',
+			'data-url=',
+			);
+		$pattern  = '#<('.implode('|', $pattern).')[\'"](/[^\'"]*)[\'"]([^>]*)>#uism';
 		$content = preg_replace($pattern, '<$1"'.$static_url.'$2"$3>', $content);
 
 		$content = str_replace(addcslashes($site_url, '/'), addcslashes(trailingslashit($this->static_url), '/'), $content);
