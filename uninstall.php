@@ -5,7 +5,7 @@ if( !defined('ABSPATH') && !defined('WP_UNINSTALL_PLUGIN') )
 
 
 if (!class_exists('static_press_admin'))
-	require(dirname(__FILE__).'/includes/class-admin-menu.php');
+	require(dirname(__FILE__).'/includes/class-static_press_admin.php');
 if (!class_exists('static_press'))
 	require(dirname(__FILE__).'/includes/class-static_press.php');
 
