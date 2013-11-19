@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: StaticPress
-Author: wokamoto 
+Author: wokamoto
 Plugin URI: https://github.com/megumiteam/staticpress
 Description: Transform your WordPress into static websites and blogs.
-Version: 0.4.3.3
+Version: 0.4.3.4
 Author URI: http://www.digitalcube.jp/
 Text Domain: static-press
 Domain Path: /languages

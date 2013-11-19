@@ -3,8 +3,8 @@ Contributors: wokamoto, megumithemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 Tags: static
 Requires at least: 3.5
-Tested up to: 3.5.1
-Stable tag: 0.4.3.3
+Tested up to: 3.7.1
+Stable tag: 0.4.3.4
 
 Transform your WordPress into static websites and blogs.
 
@@ -36,7 +36,11 @@ none
 
 3. Rebuild!
 
-== Changelog == 
+== Changelog ==
+
+**0.4.3.4 - November 19, 2013**
+
+Unable to uninstall because of wrong filename.
 
 **0.4.3.2 - June 19, 2013**
 
