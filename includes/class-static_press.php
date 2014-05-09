@@ -372,7 +372,7 @@ CREATE TABLE `{$this->url_table}` (
 			// get remote file
 			if (($content = $this->remote_get($url)) && isset($content['body'])) {
 				$http_code = intval($content['code']);
-				switch (intval($http_code)) {
+				switch ($http_code) {
 				case 200:
 					if ($crawling)
 						$this->other_url($content['body'], $url, $http_code);
