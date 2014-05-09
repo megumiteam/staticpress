@@ -40,7 +40,8 @@ $staticpress = new static_press(
 	plugin_basename(__FILE__),
 	static_press_admin::static_url(),
 	static_press_admin::static_dir(),
-	static_press_admin::remote_get_option()
+	static_press_admin::remote_get_option(),
+	static_press_admin::fetch_option()
 	);
 
 add_filter('StaticPress::get_url', array($staticpress, 'replace_url'));
