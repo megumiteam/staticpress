@@ -289,10 +289,12 @@ class static_press_admin {
 ?>
 <script type="text/javascript">
 jQuery(function($){
+	var time_start = 0;
 	var file_count = 0;
 	var loader = $('<div id="loader" style="line-height: 115px; text-align: center;"><img alt="activity indicator" src="<?php echo plugins_url( 'images/ajax-loader.gif' , dirname(__FILE__) ); ?>"></div>');
 
 	function static_press_init(){
+		time_start = (new Date()).getTime();
 		file_count = 0;
 		$('#debug-output').html('');
 		$('#rebuild').hide();
@@ -376,6 +378,7 @@ jQuery(function($){
 	}
 
 	function static_press_finalyze(){
+		var time_elapsed = ((new Date()).getTime() - time_start) / 1000;
 		$.ajax('<?php echo $admin_ajax; ?>',{
 			data: {action: 'static_press_finalyze'},
 			cache: false,
@@ -386,6 +389,7 @@ jQuery(function($){
 				$('#rebuild').show();
 				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="elapsed"><strong><?php echo __('Elapsed Time', self::TEXT_DOMAIN);?>: '+time_elapsed+'sec.</strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			},
