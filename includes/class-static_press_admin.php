@@ -272,7 +272,8 @@ jQuery(function($){
 							ul.append('<li>' + file_count + ' : ' + this.static + '</li>');
 						}
 					});
-					$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
+					if($('li:last-child', ul).length > 0)
+						$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
 					if (response.final)
 						static_press_finalyze();
 					else
