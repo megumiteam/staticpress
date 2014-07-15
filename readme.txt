@@ -3,8 +3,8 @@ Contributors: wokamoto, megumithemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 Tags: static
 Requires at least: 3.5
-Tested up to: 3.7.1
-Stable tag: 0.4.3.4
+Tested up to: 3.9.2
+Stable tag: 0.4.3.5
 
 Transform your WordPress into static websites and blogs.
 
@@ -37,6 +37,10 @@ none
 3. Rebuild!
 
 == Changelog ==
+
+**0.4.3.5 - July 15, 2014**
+
+fixed a case of message: 'PHP Notice: Trying to get property of non-object
 
 **0.4.3.4 - November 19, 2013**
 
