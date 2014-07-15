@@ -324,7 +324,7 @@ CREATE TABLE `{$this->url_table}` (
 			$this->fetch_last_id()
 			);
 		$result = $wpdb->get_row($sql);
-		if (!is_wp_error($result) && $result->ID) {
+		if (!is_null($result) && !is_wp_error($result) && $result->ID) {
 			$next_id = $this->fetch_last_id($result->ID);
 			return $result;
 		} else {
