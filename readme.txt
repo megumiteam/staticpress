@@ -3,8 +3,8 @@ Contributors: wokamoto, megumithemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 Tags: static
 Requires at least: 3.5
-Tested up to: 3.9.2
-Stable tag: 0.4.3.5
+Tested up to: 4.0.1
+Stable tag: 0.4.3.6
 
 Transform your WordPress into static websites and blogs.
 
@@ -16,6 +16,7 @@ Transform your WordPress into static websites and blogs.
 "Static Press" has been translated into languages. Our thanks and appreciation must go to the following for their contributions:
 
 * Japanese (ja) - [OKAMOTO Wataru](http://dogmap.jp/ "dogmap.jp") (plugin author)
+* German (de) - [Olav Schettler](https://gist.github.com/oschettler/492541398b49d11cb746 "oschettler")
 
 If you have translated into your language, please let me know.
 
@@ -37,6 +38,10 @@ none
 3. Rebuild!
 
 == Changelog ==
+
+**0.4.3.6 - November 5, 2014**
+
+fixed Windows issue.
 
 **0.4.3.5 - July 15, 2014**
 
