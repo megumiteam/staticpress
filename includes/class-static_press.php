@@ -1,10 +1,10 @@
 <?php
 class static_press {
-	const FETCH_LIMIT        =   5;
-	const FETCH_LIMIT_STATIC = 100;
-	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
-
 	static $instance;
+
+	private $fetch_limit        = 10;
+	private $fetch_limit_static = 100;
+	private $expires            = 3600; // 60min * 60sec = 1hour
 
 	private $plugin_basename;
 	private $plugin_name;
@@ -25,12 +25,12 @@ class static_press {
 		'gz','zip', 'pdf', 'swf',
 		);
 
-	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
+	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array(), $fetch_option = array()){
 		self::$instance = $this;
 
 		$this->plugin_basename = $plugin_basename;
 		$this->url_table = self::url_table();
-		$this->init_params($static_url, $static_dir, $remote_get_option);
+		$this->init_params($static_url, $static_dir, $remote_get_option, $fetch_option);
 
 		add_action('wp_ajax_static_press_init', array($this, 'ajax_init'));
 		add_action('wp_ajax_static_press_fetch', array($this, 'ajax_fetch'));
@@ -42,7 +42,7 @@ class static_press {
 		return $wpdb->prefix.'urls';
 	}
 
-	private function init_params($static_url, $static_dir, $remote_get_option){
+	private function init_params($static_url, $static_dir, $remote_get_option, $fetch_option){
 		global $wpdb;
 
 		$parsed   = parse_url($this->get_site_url());
@@ -76,6 +76,10 @@ class static_press {
 		$this->plugin_version = isset($data['version']) ? $data['version'] : '';
 
 		$this->create_table();
+
+		$this->fetch_limit        = $fetch_option['fetch_limit'];
+		$this->fetch_limit_static = $fetch_option['fetch_limit_static'];
+		$this->expires            = $fetch_option['expires'];
 	}
 
 	public function activate(){
@@ -214,7 +218,7 @@ CREATE TABLE `{$this->url_table}` (
 		}
 
 		while ($url = $this->fetch_url()) {
-			$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
+			$limit = ($url->type == 'static_file' ? $this->fetch_limit_static : $this->fetch_limit);
 			$static_file = $this->create_static_file($url->url, $url->type, true, true);
 			$file_count++;
 			$result[$url->ID] = array(
@@ -290,7 +294,7 @@ CREATE TABLE `{$this->url_table}` (
 		} else {
 			$start_time = date('Y-m-d h:i:s', time());
 			$param['fetch_start_time'] = $start_time;
-			set_transient($transient_key, $param, self::EXPIRES);
+			set_transient($transient_key, $param, $this->expires);
 			return $start_time;
 		}
 	}
@@ -304,7 +308,7 @@ CREATE TABLE `{$this->url_table}` (
 		if ($next_id) {
 			$last_id = $next_id;
 			$param['fetch_last_id'] = $next_id;
-			set_transient($transient_key, $param, self::EXPIRES);
+			set_transient($transient_key, $param, $this->expires);
 		}
 		return $last_id;
 	}
@@ -372,7 +376,7 @@ CREATE TABLE `{$this->url_table}` (
 			// get remote file
 			if (($content = $this->remote_get($url)) && isset($content['body'])) {
 				$http_code = intval($content['code']);
-				switch (intval($http_code)) {
+				switch ($http_code) {
 				case 200:
 					if ($crawling)
 						$this->other_url($content['body'], $url, $http_code);

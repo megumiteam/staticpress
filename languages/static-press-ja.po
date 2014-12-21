@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: static-press\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-05-14 14:46+0900\n"
-"PO-Revision-Date: 2013-05-14 14:50+0900\n"
+"POT-Creation-Date: 2014-05-11 22:37+0900\n"
+"PO-Revision-Date: 2014-05-11 22:38+0900\n"
 "Last-Translator: wokamoto <wokamoto1973@gmail.com>\n"
 "Language-Team: JAPANESE <http://wppluginsj.sourceforge.jp/>\n"
 "Language: ja_JP\n"
@@ -27,6 +27,10 @@ msgstr "StaticPress 設定"
 msgid "Done!"
 msgstr "完了"
 
+#: ../includes/class-static_press_admin.php:231
+msgid "Basic Configurations"
+msgstr "基本設定"
+
 #: ../includes/class-admin-menu.php:110
 msgid "Static URL"
 msgstr "静的サイト URL"
@@ -43,7 +47,28 @@ msgstr "(オプション) BASIC 認証 ユーザー名"
 msgid "(OPTION) BASIC Auth Password"
 msgstr "(オプション) BASIC 認証 パスワード"
 
-#: ../includes/class-admin-menu.php:135
+#: ../includes/class-static_press_admin.php:238
+msgid "Advanced Options"
+msgstr "高度な設定"
+
+#: ../includes/class-static_press_admin.php:240
+msgid "FETCH LIMIT"
+msgstr "ページ同時フェッチ数"
+
+#: ../includes/class-static_press_admin.php:241
+msgid "FETCH LIMIT STATIC"
+msgstr "静的ファイル同時フェッチ数"
+
+#: ../includes/class-static_press_admin.php:242
+msgid "EXPIRES"
+msgstr "有効期限"
+
+#: ../includes/class-static_press_admin.php:243
+msgid "DEBUG MODE"
+msgstr "デバッグモード"
+
+#: ../includes/class-static_press_admin.php:270
+#: ../includes/class-static_press_admin.php:275
 msgid "Rebuild"
 msgstr "再構築"
 
@@ -68,6 +93,10 @@ msgstr "エラー！"
 msgid "End"
 msgstr "終了"
 
-#: ../includes/class-admin-menu.php:258
+#: ../includes/class-static_press_admin.php:392
+msgid "Elapsed Time"
+msgstr "経過時間"
+
+#: ../includes/class-static_press_admin.php:422
 msgid "Settings"
 msgstr "設定"

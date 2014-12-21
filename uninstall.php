@@ -13,6 +13,11 @@ delete_option(static_press_admin::OPTION_STATIC_URL);
 delete_option(static_press_admin::OPTION_STATIC_DIR);
 delete_option(static_press_admin::OPTION_STATIC_BASIC);
 
+delete_option(static_press_admin::FETCH_LIMIT);
+delete_option(static_press_admin::FETCH_LIMIT_STATIC);
+delete_option(static_press_admin::EXPIRES);
+delete_option(static_press_admin::DEBUG_MODE);
+
 global $wpdb;
 
 $url_table = static_press::url_table();
