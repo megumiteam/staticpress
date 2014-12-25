@@ -348,19 +348,24 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	// make subdirectries
-	private function make_subdirectories( $dirname ){
-		if ( !file_exists($dirname) ) {
-			mkdir( $dirname, 0755, true );
+	private function make_subdirectories($file){
+		$dir_sep = $subdir = $this->dir_sep();
+		$directories = explode($dir_sep, dirname($file));
+		foreach ($directories as $dir){
+			if (empty($dir))
+				continue;
+			$subdir .= trailingslashit($dir);
+			if (!file_exists($subdir))
+				mkdir($subdir, 0755);
 		}
 	}
 
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
 		$url = apply_filters('StaticPress::get_url', $url);
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
-		$dir_sep = $this->dir_sep();
-		if ( '/' !== $dir_sep ) {
+		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
+		if ( $dir_sep !== '/' )
 			$file_dest = str_replace('/', $dir_sep, $file_dest);
-		}
 
 		$http_code = 200;
 		switch ($file_type) {
