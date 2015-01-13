@@ -11,6 +11,8 @@ Transform your WordPress into static websites and blogs.
 == Description ==
 
 Transform your WordPress into static websites and blogs.
+More documentation, you can find here: [StaticPress](http://en.staticpress.net/ "StaticPress")
+
 
 = Localization =
 "Static Press" has been translated into languages. Our thanks and appreciation must go to the following for their contributions:
