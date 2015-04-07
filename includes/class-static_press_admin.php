@@ -6,6 +6,7 @@ class static_press_admin {
 	const OPTION_STATIC_URL   = 'StaticPress::static url';
 	const OPTION_STATIC_DIR   = 'StaticPress::static dir';
 	const OPTION_STATIC_BASIC = 'StaticPress::basic auth';
+	const OPTION_STATIC_TIMEOUT = 'StaticPress::timeout';
 	const OPTION_PAGE = 'static-press';
 	const TEXT_DOMAIN = 'static-press';
 	const DEBUG_MODE  = false;
@@ -28,6 +29,7 @@ class static_press_admin {
 		$this->static_url = self::static_url();
 		$this->static_dir = self::static_dir();
 		$this->basic_auth = self::basic_auth();
+		$this->timeout    = self::timeout();
 		$this->plugin_basename = $plugin_basename;
 		$this->admin_action = admin_url('/admin.php') . '?page=' . self::OPTION_PAGE . '-options';
 
@@ -56,12 +58,19 @@ class static_press_admin {
 		return get_option(self::OPTION_STATIC_BASIC, false);
 	}
 
+	static public function timeout() {
+		return get_option(self::OPTION_STATIC_TIMEOUT, false);
+	}
+
 	static public function remote_get_option(){
-		$basic_auth = self::basic_auth();
-		return 
-			$basic_auth
-			? array('headers' => array('Authorization' => 'Basic '.$basic_auth))
-			: array();
+		$options = array();
+		if ($basic_auth = self::basic_auth()) {
+			$options['headers'] = array('Authorization' => 'Basic '.$basic_auth);
+		}
+		if ($timeout = self::timeout()) {
+			$options['timeout'] = (int) $timeout;
+		}
+		return $options;
 	}
 
 	static public function get_site_url(){
@@ -137,6 +146,7 @@ class static_press_admin {
 		$iv->set_rules('static_dir', array('trim','esc_html'));
 		$iv->set_rules('basic_usr',  array('trim','esc_html'));
 		$iv->set_rules('basic_pwd',  array('trim','esc_html'));
+		$iv->set_rules('timeout',    'numeric');
 
 		// Update options
 		if (!is_wp_error($iv->input($nonce_name)) && check_admin_referer($nonce_action, $nonce_name)) {
@@ -145,6 +155,7 @@ class static_press_admin {
 			$static_dir = $iv->input('static_dir');
 			$basic_usr  = $iv->input('basic_usr');
 			$basic_pwd  = $iv->input('basic_pwd');
+			$timeout    = $iv->input('timeout');
 			$basic_auth = 
 				($basic_usr && $basic_pwd)
 				? base64_encode("{$basic_usr}:{$basic_pwd}")
@@ -154,6 +165,7 @@ class static_press_admin {
 			update_option(self::OPTION_STATIC_URL, $static_url);
 			update_option(self::OPTION_STATIC_DIR, $static_dir);
 			update_option(self::OPTION_STATIC_BASIC, $basic_auth);
+			update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
 			printf(
 				'<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n",
 				empty($err_message) ? __('Done!', self::TEXT_DOMAIN) : $err_message
@@ -162,6 +174,7 @@ class static_press_admin {
 			$this->static_url = $static_url;
 			$this->static_dir = $static_dir;
 			$this->basic_auth = $basic_auth;
+			$this->timeout    = $timeout;
 
 		}
 		do_action('StaticPress::options_save');
@@ -180,6 +193,7 @@ class static_press_admin {
 		<?php $this->input_field('static_dir', __('Save DIR (Document root)', self::TEXT_DOMAIN), $this->static_dir); ?>
 		<?php $this->input_field('basic_usr', __('(OPTION) BASIC Auth User', self::TEXT_DOMAIN), $basic_usr); ?>
 		<?php $this->input_field('basic_pwd', __('(OPTION) BASIC Auth Password', self::TEXT_DOMAIN), $basic_pwd, 'password'); ?>
+		<?php $this->input_field('timeout', __('(OPTION) Request Timeout', self::TEXT_DOMAIN), $timeout); ?>
 		</tbody></table>
 		<?php submit_button(); ?>
 		</form>
