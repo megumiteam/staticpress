@@ -21,6 +21,7 @@ class static_press_admin {
 	private $static_url;
 	private $static_dir;
 	private $basic_auth;
+	private $timeout;
 	private $admin_action;
 
 	function __construct($plugin_basename){
@@ -59,7 +60,7 @@ class static_press_admin {
 	}
 
 	static public function timeout() {
-		return get_option(self::OPTION_STATIC_TIMEOUT, false);
+		return get_option(self::OPTION_STATIC_TIMEOUT, 5);
 	}
 
 	static public function remote_get_option(){
@@ -105,7 +106,7 @@ class static_press_admin {
 			array($this, 'options_page'),
 			plugins_url('images/staticpress_options.png', dirname(__FILE__))
 			);
-		
+
 		do_action('StaticPress::admin_menu', self::OPTION_PAGE);
 	}
 
@@ -156,7 +157,7 @@ class static_press_admin {
 			$basic_usr  = $iv->input('basic_usr');
 			$basic_pwd  = $iv->input('basic_pwd');
 			$timeout    = $iv->input('timeout');
-			$basic_auth = 
+			$basic_auth =
 				($basic_usr && $basic_pwd)
 				? base64_encode("{$basic_usr}:{$basic_pwd}")
 				: false;
@@ -193,7 +194,7 @@ class static_press_admin {
 		<?php $this->input_field('static_dir', __('Save DIR (Document root)', self::TEXT_DOMAIN), $this->static_dir); ?>
 		<?php $this->input_field('basic_usr', __('(OPTION) BASIC Auth User', self::TEXT_DOMAIN), $basic_usr); ?>
 		<?php $this->input_field('basic_pwd', __('(OPTION) BASIC Auth Password', self::TEXT_DOMAIN), $basic_pwd, 'password'); ?>
-		<?php $this->input_field('timeout', __('(OPTION) Request Timeout', self::TEXT_DOMAIN), $timeout); ?>
+		<?php $this->input_field('timeout', __('(OPTION) Request Timeout', self::TEXT_DOMAIN), $this->timeout); ?>
 		</tbody></table>
 		<?php submit_button(); ?>
 		</form>
@@ -255,7 +256,7 @@ jQuery(function($){
 					});
 					$('#rebuild-result').append('<p></p>').append(ul);
 				}
-				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...', self::TEXT_DOMAIN);?></strong></p>');				
+				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...', self::TEXT_DOMAIN);?></strong></p>');
 				static_press_fetch();
 			},
 			error: function(){
@@ -276,7 +277,7 @@ jQuery(function($){
 			type: 'POST',
 			success: function(response){
 				if ($('#rebuild-result ul.result-list').size() == 0)
-					$('#rebuild-result').append('<p class="result-list-wrap"><ul class="result-list"></ul></p>');				
+					$('#rebuild-result').append('<p class="result-list-wrap"><ul class="result-list"></ul></p>');
 				if (response.result) {
 					<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
 					var ul = $('#rebuild-result ul.result-list');
