@@ -108,7 +108,7 @@ CREATE TABLE `{$this->url_table}` (
  `parent` bigint(20) unsigned NOT NULL DEFAULT 0,
  `pages` bigint(20) unsigned NOT NULL DEFAULT 1,
  `enable` int(1) unsigned NOT NULL DEFAULT '1',
- `file_name` varchar(255) NOT NULL,
+ `file_name` varchar(255) NOT NULL DEFAULT '',
  `file_date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
  `last_statuscode` int(20) NULL,
  `last_modified` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
