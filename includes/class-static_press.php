@@ -22,7 +22,7 @@ class static_press {
 	private $static_files_ext = array(
 		'html','htm','txt','css','js','gif','png','jpg','jpeg',
 		'mp3','ico','ttf','woff','otf','eot','svg','svgz','xml',
-		'gz','zip', 'pdf', 'swf',
+		'gz','zip', 'pdf', 'swf', 'xsl',
 		);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
@@ -649,8 +649,51 @@ CREATE TABLE `{$this->url_table}` (
 		$urls = array_merge($urls, $this->terms_url());
 		$urls = array_merge($urls, $this->author_url());
 		$urls = array_merge($urls, $this->static_files_url());
+		$urls = array_merge($urls, $this->seo_url());
 		return $urls;
 	}
+
+	// Check correct sitemap url by robots.txt
+	private function seo_url($url_type = 'seo_files'){
+		$urls = array();
+		$analyzed = array();
+		$sitemap = '/sitemap.xml';
+		$robots = '/robots.txt';
+		$urls[] = array('type' => $url_type, 'url' => $robots, 'last_modified' => date('Y-m-d h:i:s'));
+		if(($txt = $this->remote_get($robots)) && isset($txt['body'])){
+			$http_code = intval($txt['code']);
+			switch (intval($http_code)){
+			case 200:
+				if(preg_match('/sitemap:\s.*?(\/[\-_a-z0-9%]+\.xml)/i',$txt['body'],$match)){
+					$sitemap = $match[1];
+				}
+			}
+		}
+		$this->sitemap_analyzer($analyzed,$urls,$sitemap,$url_type);
+		return $urls;
+	}
+
+	// Crawling sitemap XML files
+	private function sitemap_analyzer(&$analyzed,&$urls,$url,$url_type){
+		$urls[] = array('type' => $url_type, 'url' => $url, 'last_modified' => date('Y-m-d h:i:s'));
+		$analyzed[] = $url;
+		if(($xml = $this->remote_get($url)) && isset($xml['body'])){
+			$http_code = intval($xml['code']);
+			switch (intval($http_code)){
+			case 200:
+				if(preg_match_all('/<loc>(.*?)<\/loc>/i',$xml['body'],$matches)){
+					foreach($matches[1] as $link){
+						if(preg_match('/\/([\-_a-z0-9%]+\.xml)$/i',$link,$matchSub)){
+							if(!in_array($matchSub[0],$analyzed)){
+								$this->sitemap_analyzer($analyzed,$urls,$matchSub[0],$url_type);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 
 	private function front_page_url($url_type = 'front_page'){
 		$urls = array();
