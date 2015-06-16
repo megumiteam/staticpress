@@ -195,7 +195,7 @@ CREATE TABLE `{$this->url_table}` (
 					$page_url = sprintf('%s/page/%d', $page_url, $page);
 					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
 					break;
-				case 'single':
+				case 'single': case 'seo_files':
 					$page_url = sprintf('%s/%d', $page_url, $page);
 					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
 					break;
