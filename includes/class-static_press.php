@@ -374,6 +374,7 @@ CREATE TABLE `{$this->url_table}` (
 		case 'single':
 		case 'term_archive':
 		case 'author_archive':
+		case 'seo_files':
 		case 'other_page':
 			// get remote file
 			if (($content = $this->remote_get($url)) && isset($content['body'])) {
