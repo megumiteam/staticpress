@@ -4,7 +4,7 @@ Plugin Name: StaticPress
 Author: wokamoto
 Plugin URI: http://en.staticpress.net/
 Description: Transform your WordPress into static websites and blogs.
-Version: 0.4.3.7
+Version: 0.4.4
 Author URI: http://www.digitalcube.jp/
 Text Domain: static-press
 Domain Path: /languages
@@ -13,7 +13,7 @@ License:
  Released under the GPL license
   http://www.gnu.org/copyleft/gpl.html
 
-  Copyright 2013 - 2014 (email : wokamoto@digitalcube.jp)
+  Copyright 2013 - 2015 (email : wokamoto@digitalcube.jp)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
