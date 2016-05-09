@@ -1,5 +1,5 @@
 === StaticPress ===
-Contributors: wokamoto, megumithemes
+Contributors: wokamoto, megumitheme,amimotoami
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 Tags: static
 Requires at least: 3.5
