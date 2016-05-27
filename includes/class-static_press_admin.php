@@ -143,11 +143,11 @@ class static_press_admin {
 
 		$iv = new InputValidator('POST');
 		$iv->set_rules($nonce_name, 'required');
-		$iv->set_rules('static_url', array('trim','esc_html'));
-		$iv->set_rules('static_dir', array('trim','esc_html'));
-		$iv->set_rules('basic_usr',  array('trim','esc_html'));
-		$iv->set_rules('basic_pwd',  array('trim','esc_html'));
-		$iv->set_rules('timeout',    'numeric');
+                $iv->set_rules('static_url', array('trim','esc_html','url','required'));
+                $iv->set_rules('static_dir', array('trim','esc_html','required'));
+                $iv->set_rules('basic_usr',  array('trim','esc_html'));
+                $iv->set_rules('basic_pwd',  array('trim','esc_html'));
+                $iv->set_rules('timeout',    array('numeric','required'));
 
 		// Update options
 		if (!is_wp_error($iv->input($nonce_name)) && check_admin_referer($nonce_action, $nonce_name)) {
@@ -163,19 +163,40 @@ class static_press_admin {
 				: false;
 
 			// Update options
-			update_option(self::OPTION_STATIC_URL, $static_url);
-			update_option(self::OPTION_STATIC_DIR, $static_dir);
-			update_option(self::OPTION_STATIC_BASIC, $basic_auth);
-			update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
-			printf(
-				'<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n",
-				empty($err_message) ? __('Done!', self::TEXT_DOMAIN) : $err_message
-				);
+                        $e = new WP_Error();
+                        if (is_wp_error($static_url)) {
+                                $e->add('error', $static_url->get_error_messages());
+                        }else{
+                                update_option(self::OPTION_STATIC_URL, $static_url);
+                                $this->static_url = $static_url;
+                        }
+                        if (is_wp_error($static_dir)) {
+                                $e->add('error', $static_dir->get_error_messages());
+                        }else{
+                                update_option(self::OPTION_STATIC_DIR, $static_dir);
+                                $this->static_dir = $static_dir;
+                        }
+                        if (is_wp_error($timeout)) {
+                                $e->add('error', $timeout->get_error_messages());
+                        }else{
+                                update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
+                                $this->timeout    = $timeout;
+                        }
 
-			$this->static_url = $static_url;
-			$this->static_dir = $static_dir;
-			$this->basic_auth = $basic_auth;
-			$this->timeout    = $timeout;
+                        if ($e->get_error_code()){
+                                $errors = $e->get_error_messages('error');
+                                echo '<div id="message" class="error"><p><strong>';
+                                foreach( $errors as $error ) {
+                                        $err_message = $error[0];
+                                        echo "$err_message" . '<br />';
+                                }
+                                echo '</strong></p></div>';
+                        }else{
+                                printf(
+                                '<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n", __('Done!', self::TEXT_DOMAIN)
+                                );
+                        }
+
 
 		}
 		do_action('StaticPress::options_save');
