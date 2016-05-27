@@ -3,8 +3,8 @@ Contributors: wokamoto, megumitheme,amimotoami
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9S8AJCY7XB8F4&lc=JP&item_name=WordPress%20Plugins&item_number=wp%2dplugins&currency_code=JPY&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHosted
 Tags: static
 Requires at least: 3.5
-Tested up to: 4.2.2
-Stable tag: 0.4.4
+Tested up to: 4.5.2
+Stable tag: 0.4.5
 
 Transform your WordPress into static websites and blogs.
 
@@ -40,6 +40,11 @@ none
 3. Rebuild!
 
 == Changelog ==
+
+**0.4.5 - May 27, 2016**
+
+Added movie ext for movie contents
+Added validations.
 
 **0.4.4 - June 19, 2015**
 
