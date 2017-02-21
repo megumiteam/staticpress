@@ -192,7 +192,7 @@ CREATE TABLE `{$this->url_table}` (
 				switch($url->type){
 				case 'term_archive':
 				case 'author_archive':
-				case 'other_page':
+				case 'other_page': case 'seo_files':
 					$page_url = sprintf('%s/page/%d', $page_url, $page);
 					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
 					break;
