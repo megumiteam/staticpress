@@ -718,7 +718,7 @@ CREATE TABLE `{$this->url_table}` (
 		$posts = $wpdb->get_results("
 select ID, post_type, post_content, post_status, post_modified
  from {$wpdb->posts}
- where (post_status = 'publish' or post_type = 'attachment')
+ where post_status = 'publish'
  and post_type in ({$this->post_types})
  order by post_type, ID
 ");
