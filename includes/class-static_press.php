@@ -1,6 +1,6 @@
 <?php
 class static_press {
-	const FETCH_LIMIT        =   5;
+	const FETCH_LIMIT        =   1;
 	const FETCH_LIMIT_STATIC = 100;
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
 
@@ -139,6 +139,10 @@ CREATE TABLE `{$this->url_table}` (
 		die();
 	}
 
+	private function log_output($message){
+		error_log($message);
+	}
+
 	public function ajax_init(){
 		global $wpdb;
 
@@ -152,7 +156,8 @@ CREATE TABLE `{$this->url_table}` (
 		$sql = $wpdb->prepare(
 			"select type, count(*) as count from {$this->url_table} where `last_upload` < %s and enable = 1 group by type",
 			$this->fetch_start_time()
-			);
+		);
+		$this->log_output(print_r($sql, true));  // for debug
 		$all_urls = $wpdb->get_results($sql);
 		$result =
 			!is_wp_error($all_urls)
@@ -163,60 +168,23 @@ CREATE TABLE `{$this->url_table}` (
 	}
 
 	public function ajax_fetch(){
-		if (!is_user_logged_in())
+		$this->log_output(print_r('ajax_fetch start', true));  // for debug
+		if (!is_user_logged_in()) {
 			wp_die('Forbidden');
+		}
 
-		if (!defined('WP_DEBUG_DISPLAY'))
+		if (!defined('WP_DEBUG_DISPLAY')) {
 			define('WP_DEBUG_DISPLAY', false);
-
-		$url = $this->fetch_url();
-		if (!$url) {
-			$result = array('result' => false, 'final' => true);
-			$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
 		}
 
+		$file_count = 0;
+		$limit_flg = false;
 		$result = array();
-		$static_file = $this->create_static_file($url->url, $url->type, true, true);
-		$file_count = 1;
-		$result[$url->ID] = array(
-			'ID' => $url->ID,
-			'page' => 1,
-			'type' => $url->type,
-			'url' => $url->url,
-			'static' => $static_file,
-			);
-		if ($url->pages > 1) {
-			for ($page = 2; $page <= $url->pages; $page++) {
-				$page_url = untrailingslashit(trim($url->url));
-				$static_file = false;
-				switch($url->type){
-				case 'term_archive':
-				case 'author_archive':
-				case 'other_page':
-					$page_url = sprintf('%s/page/%d', $page_url, $page);
-					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
-					break;
-				case 'single':
-					$page_url = sprintf('%s/%d', $page_url, $page);
-					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
-					break;
-				}
-				if (!$static_file)
-					break;
-				$file_count++;
-				$result["{$url->ID}-{$page}"] = array(
-					'ID' => $url->ID,
-					'page' => $page,
-					'type' => $url->type,
-					'url' => $page_url,
-					'static' => $static_file,
-					);
-			}
-		}
-
 		while ($url = $this->fetch_url()) {
 			$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
+			$this->log_output(print_r('create_static_file start url: ' . $url->url, true)); // for debug
 			$static_file = $this->create_static_file($url->url, $url->type, true, true);
+			$this->log_output(print_r('create_static_file end   url: ' . $url->url, true)); // for debug
 			$file_count++;
 			$result[$url->ID] = array(
 				'ID' => $url->ID,
@@ -224,13 +192,55 @@ CREATE TABLE `{$this->url_table}` (
 				'type' => $url->type,
 				'url' => $url->url,
 				'static' => $static_file,
-				);
-			if ($file_count >= $limit)
-				break;
+			);
+
+			$this->log_output(print_r('created_url: ' . $url->url . ', created_url_data', true)); // for debug
+			$this->log_output(print_r($result[$url->ID], true)); // for debug
+
+			// 複数ページ出力
+			if ($url->pages > 1) {
+				for ($page = 2; $page <= $url->pages; $page++) {
+					$page_url = untrailingslashit(trim($url->url));
+					$static_file = false;
+					switch($url->type){
+					case 'term_archive':
+					case 'author_archive':
+					case 'other_page':
+						$page_url = sprintf('%s/page/%d', $page_url, $page);
+						$this->log_output(print_r('other_page $page_url: ' . $page_url, true)); // for debug
+						$static_file = $this->create_static_file($page_url, 'other_page', false, true);
+						break;
+					case 'single':
+						$page_url = sprintf('%s/%d', $page_url, $page);
+						$this->log_output(print_r('single $page_url: ' . $page_url, true)); // for debug
+						$static_file = $this->create_static_file($page_url, 'other_page', false, true);
+						break;
+					}
+					if (!$static_file) {
+						break;
+					}
+					$file_count++;
+					$result["{$url->ID}-{$page}"] = array(
+						'ID' => $url->ID,
+						'page' => $page,
+						'type' => $url->type,
+						'url' => $page_url,
+						'static' => $static_file,
+					);
+					$this->log_output(print_r('$page_url: ' . $page_url . ', page_data', true)); // for debug
+					$this->log_output(print_r($result["{$url->ID}-{$page}"], true)); // for debug
+				}
+
+				if ($file_count >= $limit) {
+					$this->log_output(print_r('limit over! file_count:' . $file_count . ', limit: ' . $limit, true)); // for debug
+					$limit_flg = true;
+					break;
+				}
+			}
 		}
 
-		$result = array('result' => true, 'files' => $result, 'final' => ($url === false));
-		$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
+		$result = array('result' => ($file_count > 0), 'files' => $result, 'final' => !$limit_flg);
+		$this->json_output(apply_filters('StaticPress::ajax_fetch', $result));
 	}
 
 	public function ajax_finalyze(){
