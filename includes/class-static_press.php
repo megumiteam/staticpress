@@ -179,67 +179,24 @@ CREATE TABLE `{$this->url_table}` (
 
 		$file_count = 0;
 		$limit_flg = false;
-		$result = array();
+		$files = array();
 		while ($url = $this->fetch_url()) {
 			$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
-			$this->log_output(print_r('create_static_file start url: ' . $url->url, true)); // for debug
-			$static_file = $this->create_static_file($url->url, $url->type, true, true);
-			$this->log_output(print_r('create_static_file end   url: ' . $url->url, true)); // for debug
-			$file_count++;
-			$result[$url->ID] = array(
-				'ID' => $url->ID,
-				'page' => 1,
-				'type' => $url->type,
-				'url' => $url->url,
-				'static' => $static_file,
-			);
 
-			$this->log_output(print_r('created_url: ' . $url->url . ', created_url_data', true)); // for debug
-			$this->log_output(print_r($result[$url->ID], true)); // for debug
+			$result = $this->create_url($url);
+			$file_count = $file_count + $result['file_count'];
+			$files = array_merge($files, $result['files']);
 
-			// 複数ページ出力
-			if ($url->pages > 1) {
-				for ($page = 2; $page <= $url->pages; $page++) {
-					$page_url = untrailingslashit(trim($url->url));
-					$static_file = false;
-					switch($url->type){
-					case 'term_archive':
-					case 'author_archive':
-					case 'other_page':
-						$page_url = sprintf('%s/page/%d', $page_url, $page);
-						$this->log_output(print_r('other_page $page_url: ' . $page_url, true)); // for debug
-						$static_file = $this->create_static_file($page_url, 'other_page', false, true);
-						break;
-					case 'single':
-						$page_url = sprintf('%s/%d', $page_url, $page);
-						$this->log_output(print_r('single $page_url: ' . $page_url, true)); // for debug
-						$static_file = $this->create_static_file($page_url, 'other_page', false, true);
-						break;
-					}
-					if (!$static_file) {
-						break;
-					}
-					$file_count++;
-					$result["{$url->ID}-{$page}"] = array(
-						'ID' => $url->ID,
-						'page' => $page,
-						'type' => $url->type,
-						'url' => $page_url,
-						'static' => $static_file,
-					);
-					$this->log_output(print_r('$page_url: ' . $page_url . ', page_data', true)); // for debug
-					$this->log_output(print_r($result["{$url->ID}-{$page}"], true)); // for debug
-				}
-
-				if ($file_count >= $limit) {
-					$this->log_output(print_r('limit over! file_count:' . $file_count . ', limit: ' . $limit, true)); // for debug
-					$limit_flg = true;
-					break;
-				}
+			if ($file_count >= $limit) {
+				$this->log_output(print_r('limit over! file_count:' . $file_count . ', limit: ' . $limit, true)); // for debug
+				$limit_flg = true;
+				break;
 			}
 		}
 
-		$result = array('result' => ($file_count > 0), 'files' => $result, 'final' => !$limit_flg);
+		$result = array('result' => ($file_count > 0), 'files' => $files, 'final' => !$limit_flg);
+		$this->log_output(print_r($result, true)); // for debug
+		$this->log_output(print_r('ajax_fetch end', true));  // for debug
 		$this->json_output(apply_filters('StaticPress::ajax_fetch', $result));
 	}
 
@@ -369,6 +326,63 @@ CREATE TABLE `{$this->url_table}` (
 			if (!file_exists($subdir))
 				mkdir($subdir, 0755);
 		}
+	}
+
+	private function create_url($url) {
+		$result = array('files' => array());
+		$file_count = 0;
+		$this->log_output(print_r('create_static_file start url: ' . $url->url, true)); // for debug
+		$static_file = $this->create_static_file($url->url, $url->type, true, true);
+		$this->log_output(print_r('create_static_file end   url: ' . $url->url, true)); // for debug
+		$file_count++;
+		$result['files'][$url->ID] = array(
+			'ID' => $url->ID,
+			'page' => 1,
+			'type' => $url->type,
+			'url' => $url->url,
+			'static' => $static_file,
+		);
+
+		$this->log_output(print_r('created_url: ' . $url->url . ', created_url_data', true)); // for debug
+		$this->log_output(print_r($result['files'][$url->ID], true)); // for debug
+
+		// 複数ページ出力
+		if ($url->pages > 1) {
+			for ($page = 2; $page <= $url->pages; $page++) {
+				$page_url = untrailingslashit(trim($url->url));
+				$static_page_file = false;
+				switch($url->type){
+				case 'term_archive':
+				case 'author_archive':
+				case 'other_page':
+					$page_url = sprintf('%s/page/%d', $page_url, $page);
+					$this->log_output(print_r('other_page $page_url: ' . $page_url, true)); // for debug
+					$static_page_file = $this->create_static_file($page_url, 'other_page', false, true);
+					break;
+				case 'single':
+					$page_url = sprintf('%s/%d', $page_url, $page);
+					$this->log_output(print_r('single $page_url: ' . $page_url, true)); // for debug
+					$static_page_file = $this->create_static_file($page_url, 'other_page', false, true);
+					break;
+				}
+				if (!$static_page_file) {
+					break;
+				}
+				$file_count++;
+				$result['files']["{$url->ID}-{$page}"] = array(
+					'ID' => $url->ID,
+					'page' => $page,
+					'type' => $url->type,
+					'url' => $page_url,
+					'static' => $static_page_file,
+				);
+				$this->log_output(print_r('$page_url: ' . $page_url . ', page_data', true)); // for debug
+				$this->log_output(print_r($result['files']["{$url->ID}-{$page}"], true)); // for debug
+			}
+		}
+
+		$result['file_count'] = $file_count;
+		return $result;
 	}
 
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
