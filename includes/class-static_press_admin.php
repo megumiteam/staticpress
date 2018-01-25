@@ -163,40 +163,39 @@ class static_press_admin {
 				: false;
 
 			// Update options
-                        $e = new WP_Error();
-                        if (is_wp_error($static_url)) {
-                                $e->add('error', $static_url->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_URL, $static_url);
-                                $this->static_url = $static_url;
-                        }
-                        if (is_wp_error($static_dir)) {
-                                $e->add('error', $static_dir->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_DIR, $static_dir);
-                                $this->static_dir = $static_dir;
-                        }
-                        if (is_wp_error($timeout)) {
-                                $e->add('error', $timeout->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
-                                $this->timeout    = $timeout;
-                        }
+			$e = new WP_Error();
+			if (is_wp_error($static_url)) {
+				$e->add('error', $static_url->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_URL, $static_url);
+				$this->static_url = $static_url;
+			}
+			if (is_wp_error($static_dir)) {
+				$e->add('error', $static_dir->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_DIR, $static_dir);
+				$this->static_dir = $static_dir;
+			}
+			if (is_wp_error($timeout)) {
+				$e->add('error', $timeout->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
+				$this->timeout    = $timeout;
+			}
 
-                        if ($e->get_error_code()){
-                                $errors = $e->get_error_messages('error');
-                                echo '<div id="message" class="error"><p><strong>';
-                                foreach( $errors as $error ) {
-                                        $err_message = $error[0];
-                                        echo "$err_message" . '<br />';
-                                }
-                                echo '</strong></p></div>';
-                        }else{
-                                printf(
-                                '<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n", __('Done!', self::TEXT_DOMAIN)
-                                );
-                        }
-
+			if ($e->get_error_code()){
+				$errors = $e->get_error_messages('error');
+				echo '<div id="message" class="error"><p><strong>';
+				foreach( $errors as $error ) {
+					$err_message = $error[0];
+					echo "$err_message" . '<br />';
+				}
+				echo '</strong></p></div>';
+			}else{
+				printf(
+					'<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n", __('Done!', self::TEXT_DOMAIN)
+				);
+			}
 
 		}
 		do_action('StaticPress::options_save');
