@@ -346,6 +346,8 @@ jQuery(function($){
 			type: 'POST',
 			success: function(response){
 				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
+				$('#rebuild').show();
+				$('#loader').remove();
 				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End', self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
