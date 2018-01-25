@@ -399,6 +399,7 @@ CREATE TABLE `{$this->url_table}` (
 				$page_url = untrailingslashit(trim($url->url));
 				$static_page_file = false;
 				switch($url->type){
+				case 'front_page':
 				case 'term_archive':
 				case 'author_archive':
 				case 'other_page':
@@ -772,10 +773,15 @@ CREATE TABLE `{$this->url_table}` (
 
 	private function front_page_url($url_type = 'front_page'){
 		$urls = array();
+		$posts_per_page = get_option('posts_per_page');
+		$published_posts = wp_count_posts()->publish;
+		$pages = ceil($published_posts / $posts_per_page);
+
 		$site_url = $this->get_site_url();
 		$urls[] = array(
 			'type' => $url_type,
 			'url' => apply_filters('StaticPress::get_url', $site_url),
+			'pages' => $pages,
 			'last_modified' => date('Y-m-d h:i:s'),
 			);
 		return $urls;
