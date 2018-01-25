@@ -176,11 +176,17 @@ class static_press_admin {
 				update_option(self::OPTION_STATIC_DIR, $static_dir);
 				$this->static_dir = $static_dir;
 			}
+			if (is_wp_error($basic_auth)) {
+				$e->add('error', $basic_auth->get_error_messages());
+			} else if ($basic_auth) {
+				update_option(self::OPTION_STATIC_BASIC, $basic_auth);
+				$this->basic_auth = $basic_auth;
+			}
 			if (is_wp_error($timeout)) {
 				$e->add('error', $timeout->get_error_messages());
 			}else{
 				update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
-				$this->timeout    = $timeout;
+				$this->timeout = $timeout;
 			}
 
 			if ($e->get_error_code()){
