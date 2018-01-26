@@ -1,8 +1,9 @@
 <?php
 class static_press {
-	const FETCH_LIMIT        =   5;
+	const FETCH_LIMIT        =   1;
 	const FETCH_LIMIT_STATIC = 100;
 	const EXPIRES            = 3600;	// 60min * 60sec = 1hour
+	const DEBUG_MODE         = false;
 
 	static $instance;
 
@@ -25,6 +26,10 @@ class static_press {
 		'gz','zip', 'pdf', 'swf', 'xsl', 'mov', 'mp4', 'wmv', 'flv',
 		'webm', 'ogg', 'oga', 'ogv', 'ogx', 'spx', 'opus',
 		);
+
+	private $additional_types_for_single_post = array(
+		'front_page', 'author_archive', 'other_page', 'seo_files', 'static_file', 'term_archive'
+	);
 
 	function __construct($plugin_basename, $static_url = '/', $static_dir = '', $remote_get_option = array()){
 		self::$instance = $this;
@@ -51,7 +56,7 @@ class static_press {
 			isset($parsed['scheme'])
 			? $parsed['scheme']
 			: 'http';
-		$host     = 
+		$host     =
 			isset($parsed['host'])
 			? $parsed['host']
 			: (defined('DOMAIN_CURRENT_SITE') ? DOMAIN_CURRENT_SITE : $_SERVER['HTTP_HOST']);
@@ -133,13 +138,14 @@ CREATE TABLE `{$this->url_table}` (
 		}
 	}
 
-	private function json_output($content){
-		header('Content-Type: application/json; charset='.get_option('blog_charset'));
-		echo json_encode($content);
-		die();
+	private function log_output($message){
+		if (self::DEBUG_MODE) {
+			error_log($message);
+		}
 	}
 
 	public function ajax_init(){
+		$single_fetch_mode = isset($_POST['post_id']);
 		global $wpdb;
 
 		if (!defined('WP_DEBUG_DISPLAY'))
@@ -149,88 +155,70 @@ CREATE TABLE `{$this->url_table}` (
 			wp_die('Forbidden');
 
 		$urls = $this->insert_all_url();
-		$sql = $wpdb->prepare(
-			"select type, count(*) as count from {$this->url_table} where `last_upload` < %s and enable = 1 group by type",
-			$this->fetch_start_time()
-			);
+		$types = "'".implode('\', \'', $this->additional_types_for_single_post)."'";
+		$sql =
+			$single_fetch_mode
+			? $wpdb->prepare("select type, count(*) as count from {$this->url_table} where (`type` in({$types}) or ( `type` = 'single' and `object_type` = 'post' and `object_id` = %d)) and enable = 1 group by type", $_POST['post_id'])
+			: $wpdb->prepare("select type, count(*) as count from {$this->url_table} where `last_upload` < %s and enable = 1 group by type", $this->fetch_start_time());
 		$all_urls = $wpdb->get_results($sql);
+		$this->log_output(print_r($sql, true)); // for debug
+		$this->log_output(print_r($all_urls, true)); // for debug
 		$result =
 			!is_wp_error($all_urls)
 			? array('result' => true, 'urls_count' => $all_urls)
 			: array('result' => false);
 
-		$this->json_output(apply_filters('StaticPress::ajax_init', $result));
+		wp_send_json(apply_filters('StaticPress::ajax_init', $result));
 	}
 
 	public function ajax_fetch(){
-		if (!is_user_logged_in())
+		$single_fetch_mode = isset($_POST['post_id']);
+
+		$this->log_output(print_r('ajax_fetch start', true));  // for debug
+		if (!is_user_logged_in()) {
 			wp_die('Forbidden');
-
-		if (!defined('WP_DEBUG_DISPLAY'))
-			define('WP_DEBUG_DISPLAY', false);
-
-		$url = $this->fetch_url();
-		if (!$url) {
-			$result = array('result' => false, 'final' => true);
-			$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
 		}
 
-		$result = array();
-		$static_file = $this->create_static_file($url->url, $url->type, true, true);
-		$file_count = 1;
-		$result[$url->ID] = array(
-			'ID' => $url->ID,
-			'page' => 1,
-			'type' => $url->type,
-			'url' => $url->url,
-			'static' => $static_file,
-			);
-		if ($url->pages > 1) {
-			for ($page = 2; $page <= $url->pages; $page++) {
-				$page_url = untrailingslashit(trim($url->url));
-				$static_file = false;
-				switch($url->type){
-				case 'term_archive':
-				case 'author_archive':
-				case 'other_page':
-					$page_url = sprintf('%s/page/%d', $page_url, $page);
-					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
-					break;
-				case 'single':
-					$page_url = sprintf('%s/%d', $page_url, $page);
-					$static_file = $this->create_static_file($page_url, 'other_page', false, true);
+		if (!defined('WP_DEBUG_DISPLAY')) {
+			define('WP_DEBUG_DISPLAY', false);
+		}
+
+		$file_count = 0;
+		$limit_flg = false;
+		$files = array();
+
+		if ($single_fetch_mode) {
+			$urls = $this->fetch_urls($_POST['post_id']);
+			$this->log_output(print_r($urls, true)); // for debug
+			if (is_wp_error($urls)) {
+				wp_send_json_error($urls);
+			}
+
+			foreach ($urls as $url) {
+				$result = $this->create_url($url);
+				$file_count = $file_count + $result['file_count'];
+				$files = array_merge($files, $result['files']);
+			}
+
+		} else {
+			while ($url = $this->fetch_url()) {
+				$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
+
+				$result = $this->create_url($url);
+				$file_count = $file_count + $result['file_count'];
+				$files = array_merge($files, $result['files']);
+
+				if ($file_count >= $limit) {
+					$this->log_output(print_r('limit over! file_count:' . $file_count . ', limit: ' . $limit, true)); // for debug
+					$limit_flg = true;
 					break;
 				}
-				if (!$static_file)
-					break;
-				$file_count++;
-				$result["{$url->ID}-{$page}"] = array(
-					'ID' => $url->ID,
-					'page' => $page,
-					'type' => $url->type,
-					'url' => $page_url,
-					'static' => $static_file,
-					);
 			}
 		}
 
-		while ($url = $this->fetch_url()) {
-			$limit = ($url->type == 'static_file' ? self::FETCH_LIMIT_STATIC : self::FETCH_LIMIT);
-			$static_file = $this->create_static_file($url->url, $url->type, true, true);
-			$file_count++;
-			$result[$url->ID] = array(
-				'ID' => $url->ID,
-				'page' => 1,
-				'type' => $url->type,
-				'url' => $url->url,
-				'static' => $static_file,
-				);
-			if ($file_count >= $limit)
-				break;
-		}
-
-		$result = array('result' => true, 'files' => $result, 'final' => ($url === false));
-		$this->json_output(apply_filters('StaticPress::ajax_fetch', $result, $url));
+		$result = array('result' => ($file_count > 0), 'files' => $files, 'final' => !$limit_flg);
+		$this->log_output(print_r('ajax_fetch end', true));  // for debug
+		wp_send_json(apply_filters('StaticPress::ajax_fetch', $result));
 	}
 
 	public function ajax_finalyze(){
@@ -244,7 +232,7 @@ CREATE TABLE `{$this->url_table}` (
 		$this->fetch_finalyze();
 
 		$result = array('result' => true);
-		$this->json_output(apply_filters('StaticPress::ajax_finalyze', $result));
+		wp_send_json(apply_filters('StaticPress::ajax_finalyze', $result));
 	}
 
 	public function replace_url($url){
@@ -259,7 +247,7 @@ CREATE TABLE `{$this->url_table}` (
 
 	public function static_url($permalink) {
 		return urldecode(
-			preg_match('/\.[^\.]+?$/i', $permalink) 
+			preg_match('/\.[^\.]+?$/i', $permalink)
 			? $permalink
 			: trailingslashit(trim($permalink)) . 'index.html');
 	}
@@ -334,6 +322,32 @@ CREATE TABLE `{$this->url_table}` (
 		}
 	}
 
+	private function fetch_urls($post_id) {
+		global $wpdb;
+
+		$sql_for_post = $wpdb->prepare("select ID, type, url, pages from {$this->url_table} where `type` = 'single' and `object_type` = 'post' and `object_id` = %d and enable = 1 order by ID limit 1", $post_id);
+		$post_url = $wpdb->get_row($sql_for_post);
+		if (is_wp_error($post_url)) {
+			return new WP_Error('error', $post_url->get_error_messages());
+		}
+
+		if (is_null($post_url)) {
+			return new WP_Error('not_found', "not found post_id: {$post_id}" );
+		}
+
+		$types = "'".implode('\', \'', $this->additional_types_for_single_post)."'";
+		$sql_for_other = "select ID, type, url, pages from {$this->url_table} where `type` in({$types}) and enable = 1";
+		$this->log_output(print_r($sql_for_other, true)); //debug
+		$all_urls = $wpdb->get_results($sql_for_other);
+
+		if (is_wp_error($all_urls)) {
+			return new WP_Error('error', $all_urls->get_error_messages());
+		}
+
+		$result = array_merge(array($post_url), $all_urls);
+		return $result;
+	}
+
 	private function get_all_url() {
 		global $wpdb;
 
@@ -361,8 +375,68 @@ CREATE TABLE `{$this->url_table}` (
 		}
 	}
 
+	private function create_url($url) {
+		$result = array('files' => array());
+		$file_count = 0;
+		$this->log_output(print_r('create_static_file start url: ' . $url->url, true)); // for debug
+		$static_file = $this->create_static_file($url->url, $url->type, true, true);
+		$this->log_output(print_r('create_static_file end   url: ' . $url->url, true)); // for debug
+		$file_count++;
+		$result['files']["{$url->ID}-1"] = array(
+			'ID' => $url->ID,
+			'page' => 1,
+			'type' => $url->type,
+			'url' => $url->url,
+			'static' => $static_file,
+		);
+
+		$this->log_output(print_r('created_url: ' . $url->url . ', created_url_data', true)); // for debug
+		$this->log_output(print_r($result['files']["{$url->ID}-1"], true)); // for debug
+
+		// 複数ページ出力
+		if ($url->pages > 1) {
+			for ($page = 2; $page <= $url->pages; $page++) {
+				$page_url = untrailingslashit(trim($url->url));
+				$static_page_file = false;
+				switch($url->type){
+				case 'front_page':
+				case 'term_archive':
+				case 'author_archive':
+				case 'other_page':
+					$page_url = sprintf('%s/page/%d', $page_url, $page);
+					$this->log_output(print_r('other_page $page_url: ' . $page_url, true)); // for debug
+					$static_page_file = $this->create_static_file($page_url, 'other_page', false, true);
+					break;
+				case 'single':
+					$page_url = sprintf('%s/%d', $page_url, $page);
+					$this->log_output(print_r('single $page_url: ' . $page_url, true)); // for debug
+					$static_page_file = $this->create_static_file($page_url, 'other_page', false, true);
+					break;
+				}
+				if (!$static_page_file) {
+					break;
+				}
+				$file_count++;
+				$result['files']["{$url->ID}-{$page}"] = array(
+					'ID' => $url->ID,
+					'page' => $page,
+					'type' => $url->type,
+					'url' => $page_url,
+					'static' => $static_page_file,
+				);
+				$this->log_output(print_r('$page_url: ' . $page_url . ', page_data', true)); // for debug
+				$this->log_output(print_r($result['files']["{$url->ID}-{$page}"], true)); // for debug
+			}
+		}
+
+		$result['file_count'] = $file_count;
+		return $result;
+	}
+
 	private function create_static_file($url, $file_type = 'other_page', $create_404 = true, $crawling = false) {
 		$url = apply_filters('StaticPress::get_url', $url);
+		$this->log_output(print_r('create_static_file', true)); // for debug
+		$this->log_output(print_r($url, true)); // for debug
 		$file_dest = untrailingslashit($this->static_dir) . $this->static_url($url);
 		$dir_sep = defined('DIRECTORY_SEPARATOR') ? DIRECTORY_SEPARATOR : '/';
 		if ( $dir_sep !== '/' )
@@ -375,6 +449,7 @@ CREATE TABLE `{$this->url_table}` (
 		case 'single':
 		case 'term_archive':
 		case 'author_archive':
+		case 'seo_files':
 		case 'other_page':
 			// get remote file
 			if (($content = $this->remote_get($url)) && isset($content['body'])) {
@@ -698,10 +773,15 @@ CREATE TABLE `{$this->url_table}` (
 
 	private function front_page_url($url_type = 'front_page'){
 		$urls = array();
+		$posts_per_page = get_option('posts_per_page');
+		$published_posts = wp_count_posts()->publish;
+		$pages = ceil($published_posts / $posts_per_page);
+
 		$site_url = $this->get_site_url();
 		$urls[] = array(
 			'type' => $url_type,
 			'url' => apply_filters('StaticPress::get_url', $site_url),
+			'pages' => $pages,
 			'last_modified' => date('Y-m-d h:i:s'),
 			);
 		return $urls;
@@ -717,7 +797,7 @@ CREATE TABLE `{$this->url_table}` (
 		$posts = $wpdb->get_results("
 select ID, post_type, post_content, post_status, post_modified
  from {$wpdb->posts}
- where (post_status = 'publish' or post_type = 'attachment')
+ where post_status = 'publish'
  and post_type in ({$this->post_types})
  order by post_type, ID
 ");
@@ -832,7 +912,7 @@ select MAX(P.post_modified) as last_modified, count(P.ID) as count
 
 		$authors = $wpdb->get_results("
 SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
- FROM {$wpdb->posts} 
+ FROM {$wpdb->posts}
  where post_status = 'publish'
    and post_type in ({$this->post_types})
  group by post_author
@@ -899,7 +979,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 			);
 		$count = intval($wpdb->get_var($sql));
 		wp_cache_set('StaticPress::'.$link, $count, 'static_press');
-		
+
 		return $count > 0;
 	}
 
@@ -968,7 +1048,7 @@ SELECT DISTINCT post_author, COUNT(ID) AS count, MAX(post_modified) AS modified
 		    (?: [\x00-\x7F]                 # single-byte sequences   0xxxxxxx
 		    |   [\xC0-\xDF][\x80-\xBF]      # double-byte sequences   110xxxxx 10xxxxxx
 		    |   [\xE0-\xEF][\x80-\xBF]{2}   # triple-byte sequences   1110xxxx 10xxxxxx * 2
-		    |   [\xF0-\xF7][\x80-\xBF]{3}   # quadruple-byte sequence 11110xxx 10xxxxxx * 3 
+		    |   [\xF0-\xF7][\x80-\xBF]{3}   # quadruple-byte sequence 11110xxx 10xxxxxx * 3
 		    ){1,100}                        # ...one or more times
 		  )
 		| .                                 # anything else

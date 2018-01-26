@@ -163,40 +163,45 @@ class static_press_admin {
 				: false;
 
 			// Update options
-                        $e = new WP_Error();
-                        if (is_wp_error($static_url)) {
-                                $e->add('error', $static_url->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_URL, $static_url);
-                                $this->static_url = $static_url;
-                        }
-                        if (is_wp_error($static_dir)) {
-                                $e->add('error', $static_dir->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_DIR, $static_dir);
-                                $this->static_dir = $static_dir;
-                        }
-                        if (is_wp_error($timeout)) {
-                                $e->add('error', $timeout->get_error_messages());
-                        }else{
-                                update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
-                                $this->timeout    = $timeout;
-                        }
+			$e = new WP_Error();
+			if (is_wp_error($static_url)) {
+				$e->add('error', $static_url->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_URL, $static_url);
+				$this->static_url = $static_url;
+			}
+			if (is_wp_error($static_dir)) {
+				$e->add('error', $static_dir->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_DIR, $static_dir);
+				$this->static_dir = $static_dir;
+			}
+			if (is_wp_error($basic_auth)) {
+				$e->add('error', $basic_auth->get_error_messages());
+			} else if ($basic_auth) {
+				update_option(self::OPTION_STATIC_BASIC, $basic_auth);
+				$this->basic_auth = $basic_auth;
+			}
+			if (is_wp_error($timeout)) {
+				$e->add('error', $timeout->get_error_messages());
+			}else{
+				update_option(self::OPTION_STATIC_TIMEOUT, $timeout);
+				$this->timeout = $timeout;
+			}
 
-                        if ($e->get_error_code()){
-                                $errors = $e->get_error_messages('error');
-                                echo '<div id="message" class="error"><p><strong>';
-                                foreach( $errors as $error ) {
-                                        $err_message = $error[0];
-                                        echo "$err_message" . '<br />';
-                                }
-                                echo '</strong></p></div>';
-                        }else{
-                                printf(
-                                '<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n", __('Done!', self::TEXT_DOMAIN)
-                                );
-                        }
-
+			if ($e->get_error_code()){
+				$errors = $e->get_error_messages('error');
+				echo '<div id="message" class="error"><p><strong>';
+				foreach( $errors as $error ) {
+					$err_message = $error[0];
+					echo "$err_message" . '<br />';
+				}
+				echo '</strong></p></div>';
+			}else{
+				printf(
+					'<div id="message" class="updated fade"><p><strong>%s</strong></p></div>'."\n", __('Done!', self::TEXT_DOMAIN)
+				);
+			}
 
 		}
 		do_action('StaticPress::options_save');
@@ -237,6 +242,8 @@ class static_press_admin {
 		<div class="wrap" style="margin=top:2em;" id="<?php echo self::OPTION_PAGE; ?>">
 		<?php screen_icon(); ?>
 		<h2><?php echo esc_html( $title ); ?></h2>
+		<label>記事ID: <input id='post_id' type='number' name='post_id'></label>
+		<p>※記事IDを入力した場合は、その記事と、トップページ等が出力されます</p>
 		<?php submit_button(__('Rebuild', self::TEXT_DOMAIN), 'primary', 'rebuild'); ?>
 		<div id="rebuild-result"></div>
 		</div>
@@ -262,8 +269,12 @@ jQuery(function($){
 		$('#rebuild-result')
 			.html('<p><strong><?php echo __('Initialyze...', self::TEXT_DOMAIN);?></strong></p>')
 			.after(loader);
+		var params = {action: 'static_press_init'}
+		if ($("#post_id").val() != "") {
+			params.post_id = $("#post_id").val();
+		}
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_press_init'},
+			data: params,
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
@@ -280,10 +291,10 @@ jQuery(function($){
 				$('#rebuild-result').append('<p><strong><?php echo __('Fetch Start...', self::TEXT_DOMAIN);?></strong></p>');
 				static_press_fetch();
 			},
-			error: function(){
+			error: function(xhr, ajaxOptions, thrownError){
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?> (' + xhr.status + ' ' + thrownError + ')</strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
@@ -291,8 +302,12 @@ jQuery(function($){
 	}
 
 	function static_press_fetch(){
+		var params = {action: 'static_press_fetch'}
+		if ($("#post_id").val() != "") {
+			params.post_id = $("#post_id").val();
+		}
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_press_fetch'},
+			data: params,
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
@@ -308,7 +323,8 @@ jQuery(function($){
 							ul.append('<li>' + file_count + ' : ' + this.static + '</li>');
 						}
 					});
-					$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
+					if(ul.children().size() > 0)
+						$('html,body').animate({scrollTop: $('li:last-child', ul).offset().top},'slow');
 					if (response.final)
 						static_press_finalyze();
 					else
@@ -317,10 +333,10 @@ jQuery(function($){
 					static_press_finalyze();
 				}
 			},
-			error: function(){
+			error: function(xhr, ajaxOptions, thrownError){
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!', self::TEXT_DOMAIN);?> (' + xhr.status + ' ' + thrownError + ')</strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
@@ -329,7 +345,7 @@ jQuery(function($){
 
 	function static_press_finalyze(){
 		$.ajax('<?php echo $admin_ajax; ?>',{
-			data: {action: 'static_press_finalyze'},
+			data: {action: 'static_press_finalyze', post_id: $("#post_id").val()},
 			cache: false,
 			dataType: 'json',
 			type: 'POST',
@@ -337,14 +353,14 @@ jQuery(function($){
 				<?php if (self::DEBUG_MODE) echo "console.log(response);\n" ?>
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('End', self::TEXT_DOMAIN);?></strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			},
-			error: function(){
+			error: function(xhr, ajaxOptions, thrownError){
 				$('#rebuild').show();
 				$('#loader').remove();
-				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?></strong></p>');
+				$('#rebuild-result').append('<p id="message"><strong><?php echo __('Error!',   self::TEXT_DOMAIN);?> (' + xhr.status + ' ' + thrownError + ')</strong></p>');
 				$('html,body').animate({scrollTop: $('#message').offset().top},'slow');
 				file_count = 0;
 			}
