@@ -727,6 +727,9 @@ select ID, post_type, post_content, post_status, post_modified
 			$permalink = get_permalink($post->ID);
 			if (is_wp_error($permalink))
 				continue;
+			if (preg_match('/.*\.html\/.*/', $permalink, $m)) {
+				continue;
+			}
 			$count = 1;
 			if ( $splite = preg_split("#<!--nextpage-->#", $post->post_content) )
 				$count = count($splite);
