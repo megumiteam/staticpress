@@ -28,10 +28,12 @@ matrix:
     # @see https://www.php.net/supported-versions.php
     - php: 7.2
       env: WP_VERSION=trunk
-    # Because 3.7 is the version which start support for auto background update.
+    # Because 3.7 is the version which start support for auto background update. However, test can't work.
+    # 3.7 - 3.8: When init database before running PHPUnit, wp-includes/wp-db.php db_connect() calls mysql_connect().
+    # 3.9 - 4.2: wp-includes/class-phpass.php PasswordHash has a deprecated constructor.
     # @see https://make.wordpress.org/core/handbook/about/release-cycle/releasing-minor-versions/#security
     - php: 7.2
-      env: WP_VERSION=3.7
+      env: WP_VERSION=4.3
     - php: 7.1
       env: WP_VERSION=latest
     - php: 7.0
