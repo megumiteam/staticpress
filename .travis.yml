@@ -18,23 +18,35 @@ cache:
 
 matrix:
   include:
+    # Because current PHP recommended version is 7.3+.
+    # @see https://wordpress.org/support/article/requirements/
+    - php: 7.3
+      env: WP_VERSION=latest
     - php: 7.2
       env: WP_VERSION=latest
+    # Because now PHP 7.2 is in the Active Support period and should be focused in development.
+    # @see https://www.php.net/supported-versions.php
+    - php: 7.2
+      env: WP_VERSION=trunk
+    # Because 3.7 is the version which start support for auto background update.
+    # @see https://make.wordpress.org/core/handbook/about/release-cycle/releasing-minor-versions/#security
+    - php: 7.2
+      env: WP_VERSION=3.7
     - php: 7.1
       env: WP_VERSION=latest
     - php: 7.0
       env: WP_VERSION=latest
-    - php: 5.6
-      env: WP_VERSION=3.5
+    # Because of minimum support version.
+    # @see https://wordpress.org/news/2019/04/minimum-php-version-update/
+    # @see https://ubuntu.com/about/release-cycle
     - php: 5.6
       env: WP_VERSION=latest
-    - php: 5.6
-      env: WP_VERSION=trunk
-    - php: 5.6
+      dist: trusty
+  allow_failures:
+    # Because there are too match errors and warnings,
+    # however now it needs to leave codes to prioritize merging commits from other forked repositories.
+    - php: 7.2
       env: WP_TRAVISCI=phpcs
-    - php: 5.3
-      env: WP_VERSION=latest
-      dist: precise
 
 before_script:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
@@ -51,8 +63,7 @@ before_script:
     fi
   - |
     if [[ "$WP_TRAVISCI" == "phpcs" ]] ; then
-      composer global require wp-coding-standards/wpcs
-      phpcs --config-set installed_paths $HOME/.composer/vendor/wp-coding-standards/wpcs
+      composer global require wp-coding-standards/wpcs dealerdirect/phpcodesniffer-composer-installer phpcompatibility/phpcompatibility-wp automattic/vipwpcs
     fi
 
 script:
