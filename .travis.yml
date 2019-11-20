@@ -34,6 +34,8 @@ matrix:
     # @see https://make.wordpress.org/core/handbook/about/release-cycle/releasing-minor-versions/#security
     - php: 7.2
       env: WP_VERSION=4.3
+    - php: 7.2
+      env: WP_TRAVISCI=phpcs
     - php: 7.1
       env: WP_VERSION=latest
     - php: 7.0
